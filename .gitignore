@@ -1,0 +1,17 @@
+# Python venv & cache
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# VSCode settings
+.vscode/
+
+# Logs
+*.log
+writable/logs/
+
+# OS-generated
+.DS_Store
+Thumbs.db
