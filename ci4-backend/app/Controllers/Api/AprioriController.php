@@ -18,10 +18,14 @@ class AprioriController extends BaseController
         $request = $this->request->getJSON(true);
         $minSupport = $request['min_support'] ?? 0.5;
         $minConfidence = $request['min_confidence'] ?? 0.7;
+        $startDate = $request['start_date'] ?? null;
+        $endDate = $request['end_date'] ?? null;
+        $title = $request['title'] ?? null;
+        $description = $request['description'] ?? null;
 
         // 1. Ambil data transaksi dari DB
         $transactionModel = new TransactionModel();
-        $data = $transactionModel->getAllWithItems();
+        $data = $transactionModel->getAllWithItems($startDate, $endDate);
 
         $transactions = [];
         foreach ($data as $row) {
@@ -46,8 +50,10 @@ class AprioriController extends BaseController
             // 3. Simpan metadata ke analisis_data
             $analisisModel = new AnalisisDataModel();
             $analisisModel->insert([
-                'title' => 'Analisis ' . date('Y-m-d H:i'),
-                'description' => 'Analisis otomatis',
+                'title' => $title,
+                'description' => $description,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
                 'total_transactions' => count($transactions),
                 'min_support' => $minSupport,
                 'min_confidence' => $minConfidence
@@ -79,7 +85,7 @@ class AprioriController extends BaseController
 
             // 6. Return response ke client
             return $this->respond([
-                'message' => 'Analisis berhasil',
+                'message' => 'Analisis berhasil dibuat',
                 'analisis_id' => $analisisId,
                 'itemsets' => $result['itemsets'],
                 'rules' => $result['rules']
