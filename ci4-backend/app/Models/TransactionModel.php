@@ -7,7 +7,7 @@ class TransactionModel extends Model
 {
     protected $table = 'transactions';
     protected $primaryKey = 'id';
-    protected $allowedFields = ['sale_date'];
+    protected $allowedFields = ['sale_date', 'transaction_number'];
     public $timestamps = false;
 
     // Ambil transaksi lengkap dengan daftar item per transaksi

@@ -26,7 +26,10 @@ class TransactionController extends BaseController
 
         try {
             foreach ($json as $trx) {
-                $trxModel->insert(['sale_date' => $trx->sale_date]);
+                $trxModel->insert([
+                    'sale_date' => $trx->sale_date,
+                    'transaction_number' => $trx->transaction_number ?? null
+                ]);
                 $transactionId = $trxModel->insertID();
 
                 foreach ($trx->products as $product) {
