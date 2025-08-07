@@ -13,3 +13,4 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], function($routes) 
     $routes->get('apriori/rules', 'AprioriController::rules');
     $routes->post('login', 'AuthController::login');
 });
+$routes->get('login', 'AuthController::loginView', ['namespace' => 'App\Controllers\Api']);

@@ -30,4 +30,10 @@ class AuthController extends BaseController
             ]
         ]);
     }
+
+    public function loginView()
+    {
+        return view('login');
+    }
+
 }
