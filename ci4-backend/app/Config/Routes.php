@@ -12,5 +12,7 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], function($routes) 
     $routes->get('apriori/itemsets', 'AprioriController::itemsets');
     $routes->get('apriori/rules', 'AprioriController::rules');
     $routes->post('login', 'AuthController::login');
+    $routes->get('login', 'AuthController::loginView');
 });
 $routes->get('login', 'AuthController::loginView', ['namespace' => 'App\Controllers\Api']);
+$routes->get('halaman-utama', 'HomeController::index', ['namespace' => 'App\Controllers\Api']);

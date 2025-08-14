@@ -186,7 +186,7 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
 
             // TODO: Redirect ke halaman dashboard setelah 1.5 detik
             setTimeout(() => {
-                window.location.href = '<?= site_url('dashboard') ?>';
+                window.location.href = '<?= site_url('halaman-utama') ?>';
             }, 1500);
         } else {
             alertDiv.className = 'error-msg';
