@@ -10,6 +10,43 @@ use App\Models\TransactionDetailModel;
 class TransactionController extends BaseController
 {
     use ResponseTrait;
+    protected $transactionModel;
+    protected $transactionDetailModel;
+
+    public function __construct()
+    {
+        $this->transactionModel = new TransactionModel();
+        $this->transactionDetailModel = new TransactionDetailModel();
+    }
+
+    public function getList()
+    {
+        $transactions = $this->transactionModel
+            ->orderBy('sale_date', 'DESC')
+            ->findAll();
+
+        $result = [];
+
+        foreach ($transactions as $trans) {
+            // Ambil detail produk dari transaksi
+            $items = $this->transactionDetailModel
+                ->select('product_name')
+                ->where('transaction_id', $trans['id'])
+                ->findAll();
+
+            $result[] = [
+                'id' => $trans['id'],
+                'sale_date' => $trans['sale_date'],
+                'transaction_number' => $trans['transaction_number'],
+                'items' => implode(', ', array_column($items, 'product_name'))
+            ];
+        }
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'data' => $result
+        ]);
+    }
 
     public function create()
     {
@@ -50,4 +87,5 @@ class TransactionController extends BaseController
             return $this->failServerError('Gagal menyimpan transaksi: ' . $e->getMessage());
         }
     }
+
 }

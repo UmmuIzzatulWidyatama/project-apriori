@@ -5,7 +5,7 @@ use App\Controllers\BaseController;
 
 class HomeController extends BaseController
 {
-    public function index()
+    public function homeView()
     {
         return view('halaman_utama');
     }
