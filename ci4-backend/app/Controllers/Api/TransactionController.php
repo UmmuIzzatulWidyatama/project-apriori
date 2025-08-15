@@ -19,16 +19,25 @@ class TransactionController extends BaseController
         $this->transactionDetailModel = new TransactionDetailModel();
     }
 
+    public function transactionView()
+    {
+        return view('transaksi_list');
+    }
+
     public function getList()
     {
+        $page = $this->request->getGet('page') ?? 1;
+        $perPage = $this->request->getGet('limit') ?? 10;
+
         $transactions = $this->transactionModel
             ->orderBy('sale_date', 'DESC')
-            ->findAll();
+            ->paginate($perPage, 'default', $page);
+
+        $total = $this->transactionModel->countAll();
 
         $result = [];
 
         foreach ($transactions as $trans) {
-            // Ambil detail produk dari transaksi
             $items = $this->transactionDetailModel
                 ->select('product_name')
                 ->where('transaction_id', $trans['id'])
@@ -44,7 +53,38 @@ class TransactionController extends BaseController
 
         return $this->response->setJSON([
             'status' => 'success',
-            'data' => $result
+            'data' => $result,
+            'meta' => [
+                'page' => (int)$page,
+                'limit' => (int)$perPage,
+                'total' => $total
+            ]
+        ]);
+    }
+
+    public function detail($id)
+    {
+        $transaction = $this->transactionModel->find($id);
+
+        if (!$transaction) {
+            return $this->failNotFound("Transaksi dengan ID $id tidak ditemukan");
+        }
+
+        $products = $this->transactionDetailModel
+            ->select('product_name')
+            ->where('transaction_id', $id)
+            ->findAll();
+
+        return $this->respond([
+            'status' => 'success',
+            'data' => [
+                [
+                    'id' => (string)$transaction['id'],
+                    'sale_date' => $transaction['sale_date'],
+                    'transaction_number' => $transaction['transaction_number'],
+                    'products' => $products
+                ]
+            ]
         ]);
     }
 
@@ -87,5 +127,38 @@ class TransactionController extends BaseController
             return $this->failServerError('Gagal menyimpan transaksi: ' . $e->getMessage());
         }
     }
+
+    public function delete($id)
+    {
+        $transaction = $this->transactionModel->find($id);
+
+        if (!$transaction) {
+            return $this->failNotFound("Transaksi dengan ID $id tidak ditemukan");
+        }
+
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        try {
+            // Hapus dulu detailnya
+            $this->transactionDetailModel
+                ->where('transaction_id', $id)
+                ->delete();
+
+            // Hapus transaksi utamanya
+            $this->transactionModel->delete($id);
+
+            $db->transComplete();
+
+            return $this->respondDeleted([
+                'status' => 'success',
+                'message' => "Transaksi ID $id berhasil dihapus"
+            ]);
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            return $this->failServerError('Gagal menghapus transaksi: ' . $e->getMessage());
+        }
+    }
+
 
 }
