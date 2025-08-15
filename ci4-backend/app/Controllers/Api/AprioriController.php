@@ -13,6 +13,11 @@ class AprioriController extends BaseController
 {
     use ResponseTrait;
 
+    public function aprioriView()
+    {
+        return view('apriori_list');
+    }
+
     public function run()
     {
         $request = $this->request->getJSON(true);

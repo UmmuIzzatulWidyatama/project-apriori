@@ -20,3 +20,4 @@ $routes->get('login', 'AuthController::loginView', ['namespace' => 'App\Controll
 $routes->get('halaman-utama', 'HomeController::homeView', ['namespace' => 'App\Controllers\Api']);
 $routes->get('transaksi', 'TransactionController::transactionView', ['namespace' => 'App\Controllers\Api']);
 $routes->get('transaksi/detail', 'TransactionController::detailView', ['namespace' => 'App\Controllers\Api']);
+$routes->get('apriori', 'AprioriController::aprioriView', ['namespace' => 'App\Controllers\Api']);
