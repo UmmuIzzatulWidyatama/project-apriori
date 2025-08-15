@@ -19,3 +19,4 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], function($routes) 
 $routes->get('login', 'AuthController::loginView', ['namespace' => 'App\Controllers\Api']);
 $routes->get('halaman-utama', 'HomeController::homeView', ['namespace' => 'App\Controllers\Api']);
 $routes->get('transaksi', 'TransactionController::transactionView', ['namespace' => 'App\Controllers\Api']);
+$routes->get('transaksi/detail', 'TransactionController::detailView', ['namespace' => 'App\Controllers\Api']);

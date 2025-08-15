@@ -24,6 +24,11 @@ class TransactionController extends BaseController
         return view('transaksi_list');
     }
 
+    public function detailView()
+    {
+        return view('transaksi_detail');
+    }
+
     public function getList()
     {
         $page = $this->request->getGet('page') ?? 1;
