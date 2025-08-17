@@ -141,7 +141,7 @@
     </div>
 
     <div class="right">
-        <h1>Login Admin</h1>
+        <h1>Login</h1>
 
         <div id="alert" class="error-msg" style="display:none;"></div>
 

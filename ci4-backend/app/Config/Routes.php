@@ -15,9 +15,11 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], function($routes) 
     $routes->post('apriori/run', 'AprioriController::run');
     $routes->get('apriori/itemsets', 'AprioriController::itemsets');
     $routes->get('apriori/rules', 'AprioriController::rules');
+    $routes->get('report', 'ReportController::getList');
 });
 $routes->get('login', 'AuthController::loginView', ['namespace' => 'App\Controllers\Api']);
 $routes->get('halaman-utama', 'HomeController::homeView', ['namespace' => 'App\Controllers\Api']);
 $routes->get('transaksi', 'TransactionController::transactionView', ['namespace' => 'App\Controllers\Api']);
 $routes->get('transaksi/detail', 'TransactionController::detailView', ['namespace' => 'App\Controllers\Api']);
 $routes->get('apriori', 'AprioriController::aprioriView', ['namespace' => 'App\Controllers\Api']);
+$routes->get('report', 'ReportController::reportView', ['namespace' => 'App\Controllers\Api']);
