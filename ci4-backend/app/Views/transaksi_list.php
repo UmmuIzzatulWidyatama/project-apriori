@@ -11,7 +11,7 @@
         <table class="table table-bordered mt-3" id="transaksiTable">
           <thead class="table-light">
             <tr>
-              <th>No</th>
+              <th>ID</th>
               <th>Tanggal Penjualan</th>
               <th>Nomor Transaksi</th>
               <th>Produk</th>
@@ -59,7 +59,7 @@
         paginated.forEach((trx, index) => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${start + index + 1}</td>
+                <td>${trx.id}</td>
                 <td>${trx.sale_date}</td>
                 <td>${trx.transaction_number || '-'}</td>
                 <td>${trx.items}</td>

@@ -17,10 +17,14 @@ class ReportController extends BaseController
         $this->analisisModel = new AnalisisDataModel();
     }
 
-    // View non-API
     public function reportView()
     {
         return view('report_list');
+    }
+    
+    public function detailView()
+    {
+        return view('report_detail');
     }
 
     /**

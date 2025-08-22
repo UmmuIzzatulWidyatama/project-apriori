@@ -25,3 +25,4 @@ $routes->get('transaksi', 'TransactionController::transactionView', ['namespace'
 $routes->get('transaksi/detail', 'TransactionController::detailView', ['namespace' => 'App\Controllers\Api']);
 $routes->get('apriori', 'AprioriController::aprioriView', ['namespace' => 'App\Controllers\Api']);
 $routes->get('report', 'ReportController::reportView', ['namespace' => 'App\Controllers\Api']);
+$routes->get('report/detail', 'ReportController::detailView', ['namespace' => 'App\Controllers\Api']);
