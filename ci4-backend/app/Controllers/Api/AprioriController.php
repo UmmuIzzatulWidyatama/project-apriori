@@ -71,7 +71,9 @@ class AprioriController extends BaseController
                 $itemsetModel->insert([
                     'analisis_id' => $analisisId,
                     'itemsets' => json_encode($itemset['itemsets']),
-                    'support' => $itemset['support']
+                    'support' => $itemset['support'],
+                    'itemset_number' => $itemset['itemset_number'],
+                    'frequency'   => $itemset['frequency']
                 ]);
             }
 

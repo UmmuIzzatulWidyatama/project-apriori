@@ -25,9 +25,8 @@ class ReportController extends BaseController
 
     /**
      * GET /api/report?page=1&limit=10
-     * Pagination only (no filters).
      */
-    public function getList()
+    public function list()
     {
         $page  = max(1, (int) ($this->request->getGet('page') ?? 1));
         $limit = max(1, (int) ($this->request->getGet('limit') ?? 10)); // default 10
@@ -53,12 +52,12 @@ class ReportController extends BaseController
     }
 
     // (opsional) detail satu report
-    public function show($id = null)
+    public function detail($id = null)
     {
         if (!$id) return $this->failValidationError('ID wajib diisi');
 
         $row = $this->analisisModel
-            ->select('id, title, start_date, end_date, min_support, min_confidence, description, created_at, updated_at')
+            ->select('id, title, start_date, end_date, min_support, min_confidence, description')
             ->find($id);
 
         if (!$row) return $this->failNotFound('Data tidak ditemukan');
