@@ -3,6 +3,7 @@
 
 <div class="container-fluid mt-4 px-3">
   <h4>Detail Data Transaksi</h4>
+  <br>
 
   <div class="row">
     <div class="col-12 col-lg-10 col-xl-9">

@@ -24,7 +24,17 @@ class ReportController extends BaseController
     
     public function detailView()
     {
-        return view('report_detail');
+        $id = $this->request->getGet('id');          // dari ?id=14
+        if (!$id) {
+            return redirect()->to(base_url('report'))
+                            ->with('error', 'ID report tidak ditemukan');
+        }
+
+        return view('report_detail', [
+            'reportId' => $id,
+            'step'     => 1,
+            'backUrl'  => base_url('report'),
+        ]);
     }
 
     /**
