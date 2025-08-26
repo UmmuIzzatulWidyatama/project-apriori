@@ -64,7 +64,7 @@
                 <td>${rpt.start_date}</td>
                 <td>${rpt.end_date}</td>
                 <td>
-                    <a href="<?= base_url('report/detail') ?>?id=${rpt.id}" class="btn btn-sm btn-primary">Detail</a>
+                    <a href="<?= base_url('report/main-info') ?>?id=${rpt.id}" class="btn btn-sm btn-primary">Detail</a>
                     <button type="button" class="btn btn-sm btn-danger ms-1" onclick="deleterpt(${rpt.id})">Hapus</button>
                 </td>
             `;

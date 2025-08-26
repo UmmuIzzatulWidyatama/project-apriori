@@ -12,6 +12,9 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], function($routes) 
     $routes->get('apriori/rules', 'AprioriController::rules');
     $routes->get('report', 'ReportController::list');
     $routes->get('report/(:num)', 'ReportController::detail/$1');
+    $routes->get('report/itemset1/(:num)', 'ReportController::itemset1/$1');
+    $routes->get('report/itemset2/(:num)', 'ReportController::itemset2/$1');
+    $routes->get('report/itemset3/(:num)', 'ReportController::itemset3/$1');
 
 });
 $routes->get('login', 'AuthController::loginView', ['namespace' => 'App\Controllers\Api']);
@@ -20,4 +23,5 @@ $routes->get('transaksi', 'TransactionController::transactionView', ['namespace'
 $routes->get('transaksi/detail', 'TransactionController::detailView', ['namespace' => 'App\Controllers\Api']);
 $routes->get('apriori', 'AprioriController::aprioriView', ['namespace' => 'App\Controllers\Api']);
 $routes->get('report', 'ReportController::reportView', ['namespace' => 'App\Controllers\Api']);
-$routes->get('report/detail', 'ReportController::detailView', ['namespace' => 'App\Controllers\Api']);
+$routes->get('report/main-info', 'ReportController::detailView', ['namespace' => 'App\Controllers\Api']);
+$routes->get('report/main-itemset1', 'ReportController::itemset1View', ['namespace' => 'App\Controllers\Api']);
