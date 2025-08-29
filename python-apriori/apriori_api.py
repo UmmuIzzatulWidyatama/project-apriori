@@ -48,12 +48,17 @@ def run_apriori():
         rules_raw = association_rules(freq, metric="confidence", min_threshold=min_confidence)
         rules = []
         for _, r in rules_raw.iterrows():
+            a = list(r['antecedents'])
+            c = list(r['consequents'])
             rules.append({
-                'antecedents': list(r['antecedents']),
-                'consequents': list(r['consequents']),
+                'antecedents': a,
+                'consequents': c,
+                'itemset_number': len(a) + len(c), 
                 'support': float(round(r['support'], 4)),
                 'confidence': float(round(r['confidence'], 4)),
                 'lift': float(round(r['lift'], 4)),
+                'support_antecedents': float(round(r['antecedent support'], 4)), 
+                'support_consequents': float(round(r['consequent support'], 4))
             })
 
         return jsonify({"itemsets": itemsets, "rules": rules})

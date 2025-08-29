@@ -86,7 +86,10 @@ class AprioriController extends BaseController
                     'consequents' => json_encode($rule['consequents']),
                     'support' => $rule['support'],
                     'confidence' => $rule['confidence'],
-                    'lift' => $rule['lift']
+                    'lift' => $rule['lift'],
+                    'itemset_number' => $rule['itemset_number'] ?? (count($rule['antecedents']??[]) + count($rule['consequents']??[])),
+                    'support_antecedents'  => isset($rule['support_antecedents'])  ? (float)$rule['support_antecedents']  : null,
+                    'support_consequents'  => isset($rule['support_consequents'])  ? (float)$rule['support_consequents']  : null
                 ]);
             }
 

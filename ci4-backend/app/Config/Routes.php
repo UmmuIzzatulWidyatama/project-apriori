@@ -16,7 +16,9 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], function($routes) 
     $routes->get('report/itemset1/(:num)', 'ReportController::itemset1/$1');
     $routes->get('report/itemset2/(:num)', 'ReportController::itemset2/$1');
     $routes->get('report/itemset3/(:num)', 'ReportController::itemset3/$1');
-
+    $routes->get('report/association-itemset2/(:num)', 'ReportController::associationItemset2/$1');
+    $routes->get('report/association-itemset3/(:num)', 'ReportController::associationItemset3/$1');
+    $routes->get('report/lift/(:num)', 'ReportController::lift/$1');
 });
 //VIEW
 $routes->get('login', 'AuthController::loginView', ['namespace' => 'App\Controllers\Api']);

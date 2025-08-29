@@ -7,6 +7,7 @@ use CodeIgniter\API\ResponseTrait;
 use App\Models\AnalisisDataModel;
 use App\Models\AprioriItemsetModel;
 use App\Models\TransactionModel;
+use App\Models\AprioriRuleModel;
 
 class ReportController extends BaseController
 {
@@ -318,6 +319,253 @@ class ReportController extends BaseController
             'itemset_number' => 3,
             'count'          => count($data),
             'data'           => $data,
+        ]);
+    }
+
+    // GET /api/report/association-itemset2/{analisisId}
+    public function associationItemset2($analisisId)
+    {
+        $analisisId = (int)$analisisId;
+        if ($analisisId <= 0) {
+            return $this->failValidationErrors('analisis_id tidak valid');
+        }
+
+        // --- Ambil periode & min_confidence dari analisis_data
+        $analisis = (new AnalisisDataModel())->find($analisisId);
+        if (!$analisis) return $this->failNotFound('analisis_data tidak ditemukan');
+
+        $start      = $analisis['start_date'] ?? null;
+        $end        = $analisis['end_date'] ?? null;
+        $minConfidence = isset($analisis['min_confidence']) ? (float)$analisis['min_confidence'] : null;
+
+        // --- Hitung total transaksi pada periode tsb dari tabel transactions
+        $txModel = new TransactionModel();
+        if ($start && $end) {
+            $transactionTotal = $txModel->where('sale_date >=', $start)
+                                        ->where('sale_date <=', $end)
+                                        ->countAllResults();
+        } else {
+            $transactionTotal = $txModel->countAllResults();
+        }
+
+        // --- Parameter opsional
+        $limit = (int)($this->request->getGet('limit') ?? 1000);
+        if ($limit <= 0 || $limit > 10000) $limit = 1000;
+
+        $order = strtolower($this->request->getGet('order') ?? 'confidence'); 
+        $dir   = strtoupper($this->request->getGet('dir') ?? 'DESC');        
+        if (!in_array($order, ['confidence','support','lift'])) $order = 'confidence';
+        if (!in_array($dir, ['ASC','DESC'])) $dir = 'DESC';
+
+        // --- Ambil rules total size = 2 (1→1)
+        $model = new AprioriRuleModel(); // pastikan returnType='array'
+        $rows  = $model->select('id, analisis_id, antecedents, consequents, itemset_number, support, confidence, support_antecedents, support_consequents, created_at')
+                       ->where('analisis_id', $analisisId)
+                       ->where('itemset_number', 2)
+                       ->orderBy($order, $dir)
+                       ->findAll($limit);
+
+        $fmt = function(array $xs): string {
+            // gabung jadi "{a, b, c}"
+            $xs = array_map('strval', $xs);
+            return '{' . implode(', ', $xs) . '}';
+        };
+
+        $data = array_map(function ($r) use ($fmt) {
+            $aArr = json_decode($r['antecedents'], true) ?: [];
+            $cArr = json_decode($r['consequents'], true) ?: [];
+
+            $supp = (float)$r['support'];
+            $conf = (float)$r['confidence'];
+
+            return [
+                'id'                          => (int)$r['id'],
+                'antecedents'                 => $aArr,
+                'consequents'                 => $cArr,
+                'itemset_number'              => (int)$r['itemset_number'], // 2
+                'items'                       => $fmt($aArr) . ' -> ' . $fmt($cArr),   // <— TAMBAHAN
+                'support'                     => $supp,
+                'support_percent'             => round($supp * 100, 2),
+                'confidence'                  => $conf,
+                'confidence_percent'          => round($conf * 100, 2),
+                'support_antecedents'         => isset($r['support_antecedents']) ? (float)$r['support_antecedents'] : null,
+                'support_antecedents_percent' => isset($r['support_antecedents']) ? round((float)$r['support_antecedents'] * 100, 2) : null,
+                'support_consequents'         => isset($r['support_consequents']) ? (float)$r['support_consequents'] : null,
+                'support_consequents_percent' => isset($r['support_consequents']) ? round((float)$r['support_consequents'] * 100, 2) : null,
+                'created_at'                  => $r['created_at'],
+            ];
+        }, $rows);
+
+        return $this->respond([
+            'analisis_id'       => $analisisId,
+            'min_confidence'       => $minConfidence,   // tetap desimal 0..1
+            'itemset_number'    => 2,
+            'order_by'          => $order,
+            'order_dir'         => $dir,
+            'count'             => count($data),
+            'data'              => $data,
+        ]);
+    }
+
+    // GET /api/report/association-itemset3/{analisisId}
+    public function associationItemset3($analisisId)
+    {
+        $analisisId = (int)$analisisId;
+        if ($analisisId <= 0) {
+            return $this->failValidationErrors('analisis_id tidak valid');
+        }
+
+        // --- Ambil periode & min_confidence dari analisis_data
+        $analisis = (new AnalisisDataModel())->find($analisisId);
+        if (!$analisis) return $this->failNotFound('analisis_data tidak ditemukan');
+
+        $start      = $analisis['start_date'] ?? null;
+        $end        = $analisis['end_date'] ?? null;
+        $minConfidence = isset($analisis['min_confidence']) ? (float)$analisis['min_confidence'] : null;
+
+        // --- Hitung total transaksi pada periode tsb dari tabel transactions
+        $txModel = new TransactionModel();
+        if ($start && $end) {
+            $transactionTotal = $txModel->where('sale_date >=', $start)
+                                        ->where('sale_date <=', $end)
+                                        ->countAllResults();
+        } else {
+            $transactionTotal = $txModel->countAllResults();
+        }
+
+        // --- Parameter opsional
+        $limit = (int)($this->request->getGet('limit') ?? 1000);
+        if ($limit <= 0 || $limit > 10000) $limit = 1000;
+
+        $order = strtolower($this->request->getGet('order') ?? 'confidence'); 
+        $dir   = strtoupper($this->request->getGet('dir') ?? 'DESC'); 
+        if (!in_array($order, ['confidence','support','lift'])) $order = 'confidence';
+        if (!in_array($dir, ['ASC','DESC'])) $dir = 'DESC';
+
+        // --- Ambil rules total size = 3 (1→1)
+        $model = new AprioriRuleModel(); // pastikan returnType='array'
+        $rows  = $model->select('id, analisis_id, antecedents, consequents, itemset_number, support, confidence, support_antecedents, support_consequents, created_at')
+                       ->where('analisis_id', $analisisId)
+                       ->where('itemset_number', 3)
+                       ->orderBy($order, $dir)
+                       ->findAll($limit);
+
+        $fmt = function(array $xs): string {
+            // gabung jadi "{a, b, c}"
+            $xs = array_map('strval', $xs);
+            return '{' . implode(', ', $xs) . '}';
+        };
+
+        $data = array_map(function ($r) use ($fmt) {
+            $aArr = json_decode($r['antecedents'], true) ?: [];
+            $cArr = json_decode($r['consequents'], true) ?: [];
+
+            $supp = (float)$r['support'];
+            $conf = (float)$r['confidence'];
+
+            return [
+                'id'                          => (int)$r['id'],
+                'antecedents'                 => $aArr,
+                'consequents'                 => $cArr,
+                'itemset_number'              => (int)$r['itemset_number'], // 3
+                'items'                       => $fmt($aArr) . ' -> ' . $fmt($cArr),   // <— TAMBAHAN
+                'support'                     => $supp,
+                'support_percent'             => round($supp * 100, 2),
+                'confidence'                  => $conf,
+                'confidence_percent'          => round($conf * 100, 2),
+                'support_antecedents'         => isset($r['support_antecedents']) ? (float)$r['support_antecedents'] : null,
+                'support_antecedents_percent' => isset($r['support_antecedents']) ? round((float)$r['support_antecedents'] * 100, 2) : null,
+                'support_consequents'         => isset($r['support_consequents']) ? (float)$r['support_consequents'] : null,
+                'support_consequents_percent' => isset($r['support_consequents']) ? round((float)$r['support_consequents'] * 100, 2) : null,
+                'created_at'                  => $r['created_at'],
+            ];
+        }, $rows);
+
+        return $this->respond([
+            'analisis_id'       => $analisisId,
+            'min_confidence'       => $minConfidence,   // tetap desimal 0..1
+            'itemset_number'    => 3,
+            'order_by'          => $order,
+            'order_dir'         => $dir,
+            'count'             => count($data),
+            'data'              => $data,
+        ]);
+    }
+
+    // GET /api/report/lift/{analisisId}
+    public function lift($analisisId)
+    {
+        $analisisId = (int) $analisisId;
+        if ($analisisId <= 0) {
+            return $this->failValidationErrors('analisis_id tidak valid');
+        }
+
+        // --- meta analisis: periode & min_support
+        $analisis = (new AnalisisDataModel())->find($analisisId);
+        if (!$analisis) {
+            return $this->failNotFound('analisis_data tidak ditemukan');
+        }
+        $start      = $analisis['start_date'] ?? null;
+        $end        = $analisis['end_date'] ?? null;
+        $minSupport = isset($analisis['min_support']) ? (float)$analisis['min_support'] : null;
+
+        // --- hitung total transaksi pada periode
+        $txModel = new TransactionModel();
+        if ($start && $end) {
+            $transactionTotal = $txModel->where('sale_date >=', $start)
+                                        ->where('sale_date <=', $end)
+                                        ->countAllResults();
+        } else {
+            $transactionTotal = $txModel->countAllResults();
+        }
+
+        // --- query params opsional
+        $k     = $this->request->getGet('k');                 // itemset_number (2/3/...)
+        $k     = is_null($k) ? null : (int)$k;
+        $limit = (int) ($this->request->getGet('limit') ?? 1000);
+        if ($limit <= 0 || $limit > 10000) $limit = 1000;
+
+        $order = strtolower($this->request->getGet('order') ?? 'lift'); // lift|confidence|support
+        $dir   = strtoupper($this->request->getGet('dir') ?? 'DESC');   // ASC|DESC
+        if (!in_array($order, ['lift','confidence','support'], true)) $order = 'lift';
+        if (!in_array($dir, ['ASC','DESC'], true)) $dir = 'DESC';
+
+        // --- ambil rules
+        $model = new AprioriRuleModel(); // returnType='array'
+        $builder = $model->select('id, analisis_id, antecedents, consequents, itemset_number, support, confidence, lift, support_antecedents, support_consequents, created_at')
+                         ->where('analisis_id', $analisisId);
+        if (!is_null($k)) {
+            $builder->where('itemset_number', $k);
+        }
+        $rows = $builder->orderBy($order, $dir)->findAll($limit);
+
+        // helper format "{a, b} -> {c}"
+        $fmt = function(array $xs): string {
+            $xs = array_map('strval', $xs);
+            return '{' . implode(', ', $xs) . '}';
+        };
+
+        $data = array_map(function($r) use ($fmt) {
+            $aArr = json_decode($r['antecedents'], true) ?: [];
+            $cArr = json_decode($r['consequents'], true) ?: [];
+            $supp = (float)$r['support'];
+            $conf = (float)$r['confidence'];
+
+            return [
+                'id'                          => (int)$r['id'],
+                'items'                       => $fmt($aArr) . ' -> ' . $fmt($cArr),
+                'lift'                        => (float)$r['lift'],
+                'created_at'                  => $r['created_at'],
+            ];
+        }, $rows);
+
+        return $this->respond([
+            'analisis_id'       => $analisisId,
+            'filter_itemset_k'  => $k,               // null jika tidak difilter
+            'order_by'          => $order,
+            'order_dir'         => $dir,
+            'count'             => count($data),
+            'data'              => $data,
         ]);
     }
 }
