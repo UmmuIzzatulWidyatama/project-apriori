@@ -6,6 +6,7 @@ use App\Controllers\BaseController;
 use CodeIgniter\API\ResponseTrait;
 use App\Models\AnalisisDataModel;
 use App\Models\AprioriItemsetModel;
+use App\Models\TransactionModel;
 
 class ReportController extends BaseController
 {
@@ -23,33 +24,63 @@ class ReportController extends BaseController
         return view('report_list');
     }
     
-    public function detailView()
+    public function mainInfoView($id)
     {
-        $id = $this->request->getGet('id');
         if (!$id) {
             return redirect()->to(base_url('report'))
                             ->with('error', 'Data tidak ditemukan');
         }
 
         return view('report_detail', [
-            'reportId' => $id,
+            'reportId' => (int)$id,
             'step'     => 1,
             'backUrl'  => base_url('report'),
+            'nextUrl'  => base_url('report/itemset1/'. $id),
         ]);
     }
 
-    public function itemset1View()
+    public function itemset1View($id)
     {
-        $id = $this->request->getGet('id');
         if (!$id) {
-            return redirect()->to(base_url('report/main-info'))
+            return redirect()->to(base_url('report'))
                             ->with('error', 'Data tidak ditemukan');
         }
 
         return view('report_detail_itemset1', [
-            'reportId' => $id,
+            'reportId' => (int)$id,
             'step'     => 2,
-            'backUrl'  => base_url('report/main-info'),
+            'backUrl'  => base_url('report/main-info/'. $id),
+            'nextUrl'  => base_url('report/itemset2/'. $id),
+        ]);
+    }
+
+    public function itemset2View($id)
+    {
+        if (!$id) {
+            return redirect()->to(base_url('report'))
+                            ->with('error', 'Data tidak ditemukan');
+        }
+
+        return view('report_detail_itemset2', [
+            'reportId' => (int)$id,
+            'step'     => 3,
+            'backUrl'  => base_url('report/itemset1/'. $id),
+            'nextUrl'  => base_url('report/itemset3/'. $id),
+        ]);
+    }
+
+    public function itemset3View($id)
+    {
+        if (!$id) {
+            return redirect()->to(base_url('report'))
+                            ->with('error', 'Data tidak ditemukan');
+        }
+
+        return view('report_detail_itemset3', [
+            'reportId' => (int)$id,
+            'step'     => 4,
+            'backUrl'  => base_url('report/itemset2/'. $id),
+            'nextUrl'  => base_url('report/itemset1/'. $id),
         ]);
     }
 
@@ -97,15 +128,37 @@ class ReportController extends BaseController
 
     public function itemset1($analisisId)
     {
-        $analisisId = (int) $analisisId;
+        $analisisId = (int)$analisisId;
         if ($analisisId <= 0) {
             return $this->failValidationErrors('Data tidak ditemukan');
         }
 
-        $limit = (int) ($this->request->getGet('limit') ?? 1000);
-        if ($limit <= 0 || $limit > 100000) $limit = 1000;
+        // --- Ambil periode dari analisis_data
+        $analisis = (new AnalisisDataModel())->find($analisisId);
+        if (!$analisis) {
+            return $this->failNotFound('analisis data tidak ditemukan');
+        }
+        $start = $analisis['start_date'] ?? null;
+        $end   = $analisis['end_date'] ?? null;
+        $minSupport  = isset($analisis['min_support']) ? (float)$analisis['min_support'] : null;
 
-        $model = new AprioriItemsetModel();   // pastikan returnType = 'array' di model
+        // --- Hitung total transaksi pada periode tsb dari tabel transactions
+        $txModel = new TransactionModel();
+        if ($start && $end) {
+            $transactionTotal = $txModel
+                ->where('sale_date >=', $start)
+                ->where('sale_date <=', $end)
+                ->countAllResults();
+        } else {
+            // fallback kalau periodenya kosong: hitung semua
+            $transactionTotal = $txModel->countAllResults();
+        }
+
+        // --- Ambil itemset 1
+        $limit = (int)($this->request->getGet('limit') ?? 1000);
+        if ($limit <= 0 || $limit > 10000) $limit = 1000;
+
+        $model = new AprioriItemsetModel(); // returnType 'array'
         $rows  = $model->select('id, analisis_id, itemsets, itemset_number, support, frequency, created_at')
                        ->where('analisis_id', $analisisId)
                        ->where('itemset_number', 1)
@@ -113,27 +166,28 @@ class ReportController extends BaseController
                        ->orderBy('support', 'DESC')
                        ->findAll($limit);
 
-        // format output: decode itemsets + tambah support_percent
         $data = [];
         foreach ($rows as $r) {
             $support = (float)$r['support'];
             $data[] = [
                 'id'              => (int)$r['id'],
                 'analisis_id'     => (int)$r['analisis_id'],
-                'itemsets'        => json_decode($r['itemsets'], true), // ["Burger"], ...
-                'itemset_number'  => (int)$r['itemset_number'],         // harusnya 1 di endpoint ini
-                'support'         => $support,                          // 0..1 (sesuai teori)
-                'support_percent' => round($support * 100, 2),          // untuk tampilan
+                'itemsets'        => json_decode($r['itemsets'], true),
+                'itemset_number'  => (int)$r['itemset_number'], // 1
+                'support'         => $support,                  // 0..1
+                'support_percent' => round($support * 100, 2),  // untuk tampilan
                 'frequency'       => (int)$r['frequency'],
                 'created_at'      => $r['created_at'],
             ];
         }
 
         return $this->respond([
-            'analisis_id'    => $analisisId,
-            'itemset_number' => 1,
-            'count'          => count($data),
-            'data'           => $data,
+            'analisis_id'       => $analisisId,
+            'transaction_total'  => (int)$transactionTotal,
+            'min_support'       => $minSupport,
+            'itemset_number'    => 1,
+            'count'             => count($data),
+            'data'              => $data,
         ]);
     }
 
@@ -144,6 +198,28 @@ class ReportController extends BaseController
             return $this->failValidationErrors('Data tidak ditemukan');
         }
 
+        // --- Ambil periode dari analisis_data
+        $analisis = (new AnalisisDataModel())->find($analisisId);
+        if (!$analisis) {
+            return $this->failNotFound('analisis_data tidak ditemukan');
+        }
+        $start = $analisis['start_date'] ?? null;
+        $end   = $analisis['end_date'] ?? null;
+        $minSupport  = isset($analisis['min_support']) ? (float)$analisis['min_support'] : null;
+
+        // --- Hitung total transaksi pada periode tsb dari tabel transactions
+        $txModel = new TransactionModel();
+        if ($start && $end) {
+            $transactionTotal = $txModel
+                ->where('sale_date >=', $start)
+                ->where('sale_date <=', $end)
+                ->countAllResults();
+        } else {
+            // fallback kalau periodenya kosong: hitung semua
+            $transactionTotal = $txModel->countAllResults();
+        }
+
+        // --- Ambil itemset 2
         $limit = (int) ($this->request->getGet('limit') ?? 1000);
         if ($limit <= 0 || $limit > 10000) $limit = 1000;
 
@@ -172,6 +248,8 @@ class ReportController extends BaseController
 
         return $this->respond([
             'analisis_id'    => $analisisId,
+            'transaction_total'  => (int)$transactionTotal,
+            'min_support'       => $minSupport,
             'itemset_number' => 2,
             'count'          => count($data),
             'data'           => $data,
@@ -182,9 +260,31 @@ class ReportController extends BaseController
     {
         $analisisId = (int) $analisisId;
         if ($analisisId <= 0) {
-            return $this->failValidationErrors('analisis_id tidak valid');
+            return $this->failValidationErrors('Data tidak ditemukan');
         }
 
+        // --- Ambil periode dari analisis_data
+        $analisis = (new AnalisisDataModel())->find($analisisId);
+        if (!$analisis) {
+            return $this->failNotFound('analisis_data tidak ditemukan');
+        }
+        $start = $analisis['start_date'] ?? null;
+        $end   = $analisis['end_date'] ?? null;
+        $minSupport  = isset($analisis['min_support']) ? (float)$analisis['min_support'] : null;
+
+        // --- Hitung total transaksi pada periode tsb dari tabel transactions
+        $txModel = new TransactionModel();
+        if ($start && $end) {
+            $transactionTotal = $txModel
+                ->where('sale_date >=', $start)
+                ->where('sale_date <=', $end)
+                ->countAllResults();
+        } else {
+            // fallback kalau periodenya kosong: hitung semua
+            $transactionTotal = $txModel->countAllResults();
+        }
+
+        // --- Ambil itemset 3
         $limit = (int) ($this->request->getGet('limit') ?? 1000);
         if ($limit <= 0 || $limit > 10000) $limit = 1000;
 
@@ -213,6 +313,8 @@ class ReportController extends BaseController
 
         return $this->respond([
             'analisis_id'    => $analisisId,
+            'transaction_total'  => (int)$transactionTotal,
+            'min_support'       => $minSupport,
             'itemset_number' => 3,
             'count'          => count($data),
             'data'           => $data,

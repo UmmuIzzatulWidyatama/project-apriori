@@ -2,7 +2,7 @@
 <?= $this->section('content') ?>
 
 <?php
-  $s      = (int)($step ?? 2); // step aktif: Itemset 1
+  $s      = (int)($step ?? 3); // step aktif: Itemset 2
   $steps  = [1=>'Main Info',2=>'Itemset 1',3=>'Itemset 2',4=>'Itemset 3',5=>'Asosiasi',6=>'Lift Ratio',7=>'Kesimpulan'];
   $total  = count($steps);
 ?>
@@ -49,7 +49,7 @@
         </div>
       </div>
 
-      <h5 class="fw-semibold mb-2">Itemset 1</h5>
+      <h5 class="fw-semibold mb-2">Itemset 2</h5>
 
       <div class="meta small">
         <div><span class="k">Total Transaksi :</span> <span id="v_total_tx">–</span></div>
@@ -58,11 +58,11 @@
 
       <div class="card shadow-sm rounded-3">
         <div class="card-body">
-          <div id="loadState" class="small text-muted mb-2">Memuat itemset 1…</div>
+          <div id="loadState" class="small text-muted mb-2">Memuat itemset 2…</div>
           <div id="errorState" class="alert alert-danger d-none"></div>
 
           <div class="table-responsive">
-            <table class="table table-bordered table-sm table-zebra" id="tblItemset1">
+            <table class="table table-bordered table-sm table-zebra" id="tblItemset2">
               <thead>
                 <tr>
                   <th style="width:50%">Itemset</th>
@@ -75,8 +75,8 @@
           </div>
 
           <div class="d-flex justify-content-between mt-3">
-            <a class="btn btn-secondary" href="<?= site_url('report/main-info/'.$reportId) ?>">Main Info</a>
-            <a class="btn btn-primary<?= empty($reportId) ? ' disabled' : '' ?>" href="<?= site_url('report/itemset2/'.$reportId) ?>">Selanjutnya</a>
+            <a class="btn btn-secondary" href="<?= site_url('report/itemset1/'.$reportId) ?>">Itemset 1</a>
+            <a class="btn btn-primary<?= empty($reportId) ? ' disabled' : '' ?>" href="<?= site_url('report/itemset3/'.$reportId) ?>">Selanjutnya</a>
           </div>
         </div>
       </div>
@@ -92,7 +92,7 @@
   const els = {
     load : document.getElementById('loadState'),
     err  : document.getElementById('errorState'),
-    tbody: document.querySelector('#tblItemset1 tbody'),
+    tbody: document.querySelector('#tblItemset2 tbody'),
     total: document.getElementById('v_total_tx'),
     minS : document.getElementById('v_min_support'),
   };
@@ -114,7 +114,7 @@
     return (src ?? '(?)');
   }
 
-  async function loadItemset1(){
+  async function loadItemset2(){
     if (!id){
       els.load.classList.add('d-none');
       els.err.textContent = 'ID report tidak ditemukan.';
@@ -123,7 +123,7 @@
     }
 
     try{
-      const r = await fetch(`${apiBase}/itemset1/${encodeURIComponent(id)}`, { headers:{'Accept':'application/json'} });
+      const r = await fetch(`${apiBase}/itemset2/${encodeURIComponent(id)}`, { headers:{'Accept':'application/json'} });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const j = await r.json();
 
@@ -135,7 +135,7 @@
 
       els.tbody.innerHTML = '';
       if (!Array.isArray(rows) || rows.length === 0){
-        els.tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted">Tidak ada data itemset 1.</td></tr>`;
+        els.tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted">Tidak ada data itemset 2.</td></tr>`;
       } else {
         rows.forEach(row => {
           const name = extractName(row);
@@ -151,13 +151,13 @@
       els.load.classList.add('d-none');
     } catch (e){
       els.load.classList.add('d-none');
-      els.err.textContent = 'Gagal memuat Itemset 1. ' + e.message;
+      els.err.textContent = 'Gagal memuat Itemset 2. ' + e.message;
       els.err.classList.remove('d-none');
       console.error(e);
     }
   }
 
-  document.addEventListener('DOMContentLoaded', loadItemset1);
+  document.addEventListener('DOMContentLoaded', loadItemset2);
 </script>
 
 <?= $this->endSection() ?>

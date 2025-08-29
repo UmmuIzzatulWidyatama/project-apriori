@@ -111,11 +111,8 @@
 
           <div class="d-flex justify-content-between mt-2">
             <a href="<?= esc($backUrl ?? site_url('report')) ?>" class="btn btn-secondary">Kembali</a>
-            <?php if (!empty($nextUrl)): ?>
-              <a href="<?= esc($nextUrl) ?>" class="btn btn-primary">Selanjutnya</a>
-            <?php else: ?>
-              <button class="btn btn-primary" type="button" disabled>Selanjutnya</button>
-            <?php endif; ?>
+            <a href="<?= esc($nextUrl ?? site_url('report/main-itemset1/'.$reportId)) ?>" 
+              class="btn btn-primary<?= empty($reportId) ? ' disabled' : '' ?>">Selanjutnya</a>  
           </div>
         </div>
       </div>

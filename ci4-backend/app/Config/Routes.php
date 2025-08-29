@@ -1,6 +1,7 @@
 <?php
 
 $routes->get('/', 'Home::index');
+//API
 $routes->group('api', ['namespace' => 'App\Controllers\Api'], function($routes) {
     $routes->post('login', 'AuthController::login');
     $routes->get('transactions', 'TransactionController::list');
@@ -17,11 +18,14 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], function($routes) 
     $routes->get('report/itemset3/(:num)', 'ReportController::itemset3/$1');
 
 });
+//VIEW
 $routes->get('login', 'AuthController::loginView', ['namespace' => 'App\Controllers\Api']);
 $routes->get('halaman-utama', 'HomeController::homeView', ['namespace' => 'App\Controllers\Api']);
 $routes->get('transaksi', 'TransactionController::transactionView', ['namespace' => 'App\Controllers\Api']);
 $routes->get('transaksi/detail', 'TransactionController::detailView', ['namespace' => 'App\Controllers\Api']);
 $routes->get('apriori', 'AprioriController::aprioriView', ['namespace' => 'App\Controllers\Api']);
 $routes->get('report', 'ReportController::reportView', ['namespace' => 'App\Controllers\Api']);
-$routes->get('report/main-info', 'ReportController::detailView', ['namespace' => 'App\Controllers\Api']);
-$routes->get('report/main-itemset1', 'ReportController::itemset1View', ['namespace' => 'App\Controllers\Api']);
+$routes->get('report/main-info/(:num)', 'ReportController::mainInfoView/$1', ['namespace' => 'App\Controllers\Api']);
+$routes->get('report/itemset1/(:num)','ReportController::itemset1View/$1',['namespace' => 'App\Controllers\Api']);
+$routes->get('report/itemset2/(:num)','ReportController::itemset2View/$1',['namespace' => 'App\Controllers\Api']);
+$routes->get('report/itemset3/(:num)','ReportController::itemset3View/$1',['namespace' => 'App\Controllers\Api']);

@@ -1,4 +1,4 @@
-<?= $this->include('layout/sidebar'); ?>
+<?= $this->extend('layout/sidebar'); ?>
 
 <?= $this->section('content') ?>
 
@@ -31,45 +31,45 @@
 </div>
 
 <script>
-    const apiBase = "<?= base_url('api/report') ?>";
+    const apiBase       = "<?= site_url('api/report') ?>";
+    const mainInfoBase  = "<?= rtrim(site_url('report/main-info'), '/') ?>";
     let reports = [];
     const limit = 5;
     let page = 1;
 
     async function fetchReports() {
-        try {
-            const res = await fetch("<?= base_url('api/report') ?>");
-            const json = await res.json();
-            reports = json.data || [];
-            renderTable();
-            renderPagination();
-        } catch (err) {
-            alert("Gagal memuat data report");
-            console.error(err);
-        }
+      try {
+        const res = await fetch(apiBase);
+        const json = await res.json();
+        reports = json.data || [];
+        renderTable();
+        renderPagination();
+      } catch (err) {
+        alert("Gagal memuat data report");
+        console.error(err);
+      }
     }
 
     function renderTable() {
-        const tbody = document.querySelector("#reportTable tbody");
-        tbody.innerHTML = "";
+      const tbody = document.querySelector("#reportTable tbody");
+      tbody.innerHTML = "";
+      const start = (page - 1) * limit;
+      const paginated = reports.slice(start, start + limit);
 
-        const start = (page - 1) * limit;
-        const paginated = reports.slice(start, start + limit);
-
-        paginated.forEach((rpt, index) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${rpt.id}</td>
-                <td>${rpt.title}</td>
-                <td>${rpt.start_date}</td>
-                <td>${rpt.end_date}</td>
-                <td>
-                    <a href="<?= base_url('report/main-info') ?>?id=${rpt.id}" class="btn btn-sm btn-primary">Detail</a>
-                    <button type="button" class="btn btn-sm btn-danger ms-1" onclick="deleterpt(${rpt.id})">Hapus</button>
-                </td>
-            `;
-            tbody.appendChild(row);
-        });
+      paginated.forEach((rpt) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${rpt.id}</td>
+          <td>${rpt.title}</td>
+          <td>${rpt.start_date}</td>
+          <td>${rpt.end_date}</td>
+          <td>
+            <a href="${mainInfoBase}/${encodeURIComponent(rpt.id)}" class="btn btn-sm btn-primary">Detail</a>
+            <button type="button" class="btn btn-sm btn-danger ms-1" onclick="deleterpt(${rpt.id})">Hapus</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
     }
 
     function renderPagination() {
@@ -122,3 +122,4 @@
 
     document.addEventListener("DOMContentLoaded", fetchReports);
 </script>
+<?= $this->endSection() ?>
