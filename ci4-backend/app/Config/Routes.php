@@ -31,3 +31,5 @@ $routes->get('report/main-info/(:num)', 'ReportController::mainInfoView/$1', ['n
 $routes->get('report/itemset1/(:num)','ReportController::itemset1View/$1',['namespace' => 'App\Controllers\Api']);
 $routes->get('report/itemset2/(:num)','ReportController::itemset2View/$1',['namespace' => 'App\Controllers\Api']);
 $routes->get('report/itemset3/(:num)','ReportController::itemset3View/$1',['namespace' => 'App\Controllers\Api']);
+$routes->get('report/association-rule/(:num)','ReportController::associationRule/$1',['namespace' => 'App\Controllers\Api']);
+$routes->get('report/lift-ratio/(:num)','ReportController::liftRatio/$1',['namespace' => 'App\Controllers\Api']);

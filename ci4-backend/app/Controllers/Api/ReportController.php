@@ -81,6 +81,36 @@ class ReportController extends BaseController
             'reportId' => (int)$id,
             'step'     => 4,
             'backUrl'  => base_url('report/itemset2/'. $id),
+            'nextUrl'  => base_url('report/association-rule/'. $id),
+        ]);
+    }
+
+    public function associationRule($id)
+    {
+        if (!$id) {
+            return redirect()->to(base_url('report'))
+                            ->with('error', 'Data tidak ditemukan');
+        }
+
+        return view('report_detail_association', [
+            'reportId' => (int)$id,
+            'step'     => 5,
+            'backUrl'  => base_url('report/itemset3/'. $id),
+            'nextUrl'  => base_url('report/lift-ratio/'. $id),
+        ]);
+    }
+
+    public function liftRatio($id)
+    {
+        if (!$id) {
+            return redirect()->to(base_url('report'))
+                            ->with('error', 'Data tidak ditemukan');
+        }
+
+        return view('report_detail_lift', [
+            'reportId' => (int)$id,
+            'step'     => 6,
+            'backUrl'  => base_url('report/association-rule/'. $id),
             'nextUrl'  => base_url('report/itemset1/'. $id),
         ]);
     }

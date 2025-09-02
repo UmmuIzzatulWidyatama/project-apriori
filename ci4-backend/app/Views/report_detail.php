@@ -4,7 +4,7 @@
 <?php
   // step aktif (default 1) & daftar step
   $s      = (int)($step ?? 1);
-  $steps  = [1=>'Main Info',2=>'Itemset 1',3=>'Itemset 2',4=>'Itemset 3',5=>'Asosiasi',6=>'Lift Ratio',7=>'Kesimpulan'];
+  $steps  = [1=>'Main Info',2=>'1-Itemset',3=>'2-Itemset',4=>'3-Itemset',5=>'Association Rule',6=>'Lift Ratio',7=>'Kesimpulan'];
   $total  = count($steps);
 ?>
 

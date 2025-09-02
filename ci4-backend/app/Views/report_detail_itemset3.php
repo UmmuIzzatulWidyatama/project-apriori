@@ -3,7 +3,7 @@
 
 <?php
   $s      = (int)($step ?? 4); // step aktif: Itemset 3
-  $steps  = [1=>'Main Info',2=>'Itemset 1',3=>'Itemset 2',4=>'Itemset 3',5=>'Asosiasi',6=>'Lift Ratio',7=>'Kesimpulan'];
+  $steps  = [1=>'Main Info',2=>'1-Itemset',3=>'2-Itemset',4=>'3-Itemset',5=>'Association Rule',6=>'Lift Ratio',7=>'Kesimpulan'];
   $total  = count($steps);
 ?>
 
@@ -27,7 +27,7 @@
   .table-zebra tbody tr:nth-child(odd){ background:#f8f9fa; }
   .table-zebra thead th{ background:#e9ecef;border-bottom:1px solid #ced4da; }
 
-  .meta{ margin-bottom:10px; }
+  .meta{ margin-top:20px; margin-bottom:10px; margin-left:20px; }
   .meta .k{ color:#6c757d; }
 </style>
 
@@ -49,14 +49,16 @@
         </div>
       </div>
 
-      <h5 class="fw-semibold mb-2">Itemset 3</h5>
+      <div class="card shadow-sm rounded-3"> 
+        <div class="card-header py-3">
+          <div class="m-0 fw-semibold">Frequent 3-Itemset</div> 
+        </div>
 
-      <div class="meta small">
-        <div><span class="k">Total Transaksi :</span> <span id="v_total_tx">–</span></div>
-        <div><span class="k">Minimum Support :</span> <span id="v_min_support">–</span></div>
-      </div>
+        <div class="meta small">
+          <div><span class="k">Total Transaksi :</span> <span id="v_total_tx">–</span></div>
+          <div><span class="k">Minimum Support :</span> <span id="v_min_support">–</span></div>
+        </div>
 
-      <div class="card shadow-sm rounded-3">
         <div class="card-body">
           <div id="loadState" class="small text-muted mb-2">Memuat itemset 3…</div>
           <div id="errorState" class="alert alert-danger d-none"></div>
@@ -75,8 +77,8 @@
           </div>
 
           <div class="d-flex justify-content-between mt-3">
-            <a class="btn btn-secondary" href="<?= site_url('report/itemset2/'.$reportId) ?>">Itemset 2</a>
-            <a class="btn btn-primary<?= empty($reportId) ? ' disabled' : '' ?>" href="<?= site_url('report/itemset1/'.$reportId) ?>">Selanjutnya</a>
+            <a class="btn btn-secondary" href="<?= site_url('report/itemset2/'.$reportId) ?>">Sebelumnya</a>
+            <a class="btn btn-primary<?= empty($reportId) ? ' disabled' : '' ?>" href="<?= site_url('report/association-rule/'.$reportId) ?>">Selanjutnya</a>
           </div>
         </div>
       </div>
