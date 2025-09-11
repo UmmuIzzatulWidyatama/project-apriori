@@ -2,7 +2,7 @@
 <?= $this->section('content') ?>
 
 <?php
-  $s     = (int)($step ?? 6); // step aktif: Lift Ratio
+  $s     = (int)($step ?? 7); // step aktif: Kesimpulan
   $steps = [1=>'Main Info',2=>'1-Itemset',3=>'2-Itemset',4=>'3-Itemset',5=>'Association Rule',6=>'Lift Ratio',7=>'Kesimpulan'];
 ?>
 
@@ -40,27 +40,14 @@
 
       <div class="card shadow-sm rounded-3">
         <div class="card-header py-3">
-          <div class="m-0 fw-semibold">Lift Ratio</div>
+          <div class="m-0 fw-semibold">Kesimpulan Analisis</div>
         </div>
 
         <div class="card-body">
-          <div id="stateLift" class="small text-muted mb-2">Memuat Lift Ratio…</div>
-
-          <div class="table-responsive">
-            <table class="table table-bordered table-sm table-zebra" id="tblLift">
-              <thead>
-                <tr>
-                  <th style="width:75%">Rules</th>
-                  <th class="text-end" style="width:25%">Lift</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-
+          
           <div class="d-flex justify-content-between mt-3">
-            <a class="btn btn-secondary" href="<?= esc($backUrl ?? site_url('report')) ?>">Sebelumnya</a>
-            <a class="btn btn-primary<?= empty($reportId) ? ' disabled' : '' ?>" href="<?= site_url('report/kesimpulan/'.$reportId) ?>">Selanjutnya</a>
+            <a class="btn btn-secondary" href="<?= esc($backUrl ?? site_url('report/lift-ratio/'.$reportId)) ?>">Sebelumnya</a>
+            <a class="btn btn-primary<?= empty($reportId) ? ' disabled' : '' ?>" href="<?= site_url('report') ?>">Selanjutnya</a>
           </div>
         </div>
       </div>

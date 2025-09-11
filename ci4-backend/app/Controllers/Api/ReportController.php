@@ -115,6 +115,21 @@ class ReportController extends BaseController
         ]);
     }
 
+    public function kesimpulan($id)
+    {
+        if (!$id) {
+            return redirect()->to(base_url('report'))
+                            ->with('error', 'Data tidak ditemukan');
+        }
+
+        return view('report_detail_kesimpulan', [
+            'reportId' => (int)$id,
+            'step'     => 7,
+            'backUrl'  => base_url('report/lift-ratio/'. $id),
+            'nextUrl'  => base_url('report'. $id),
+        ]);
+    }
+
     /**
      * GET /api/report?page=1&limit=10
      */

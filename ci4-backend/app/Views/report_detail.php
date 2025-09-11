@@ -111,8 +111,7 @@
 
           <div class="d-flex justify-content-between mt-2">
             <a href="<?= esc($backUrl ?? site_url('report')) ?>" class="btn btn-secondary">Kembali</a>
-            <a href="<?= esc($nextUrl ?? site_url('report/main-itemset1/'.$reportId)) ?>" 
-              class="btn btn-primary<?= empty($reportId) ? ' disabled' : '' ?>">Selanjutnya</a>  
+            <a class="btn btn-primary<?= empty($reportId) ? ' disabled' : '' ?>" href="<?= site_url('report/itemset1/'.$reportId) ?>">Selanjutnya</a>  
           </div>
         </div>
       </div>

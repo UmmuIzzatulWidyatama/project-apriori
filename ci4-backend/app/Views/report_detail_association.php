@@ -87,7 +87,7 @@
 
           <div class="d-flex justify-content-between mt-3">
             <a class="btn btn-secondary" href="<?= esc($backUrl ?? site_url('report')) ?>">Sebelumnya</a>
-            <a class="btn btn-primary<?= empty($reportId) ? ' disabled' : '' ?>" href="<?= esc($nextUrl ?? site_url('report')) ?>">Selanjutnya</a>
+            <a class="btn btn-primary<?= empty($reportId) ? ' disabled' : '' ?>" href="<?= esc($nextUrl ?? site_url('report_detail_lift')) ?>">Selanjutnya</a> 
           </div>
         </div>
       </div>
