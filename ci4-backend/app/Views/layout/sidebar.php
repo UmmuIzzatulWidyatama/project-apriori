@@ -13,7 +13,7 @@
       margin: 0;
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
       display: flex;
-      height: 100vh;
+      min-height: 100vh;
     }
     .sidebar {
       width: 220px;
@@ -22,6 +22,7 @@
       background-color: #f5f5f5;
       padding-top: 20px;
       border-right: 1px solid #ccc;
+      overflow-y: auto;
     }
     .sidebar h2 {
       text-align: center;

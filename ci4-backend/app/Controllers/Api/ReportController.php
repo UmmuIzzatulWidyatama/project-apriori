@@ -100,7 +100,7 @@ class ReportController extends BaseController
         ]);
     }
 
-    public function liftRatio($id)
+    public function liftRatioView($id)
     {
         if (!$id) {
             return redirect()->to(base_url('report'))
@@ -115,7 +115,7 @@ class ReportController extends BaseController
         ]);
     }
 
-    public function kesimpulan($id)
+    public function kesimpulanView($id)
     {
         if (!$id) {
             return redirect()->to(base_url('report'))
@@ -613,4 +613,108 @@ class ReportController extends BaseController
             'data'              => $data,
         ]);
     }
+
+    public function kesimpulan($analisisId)
+    {
+        $analisisId = (int)$analisisId;
+        if ($analisisId <= 0) {
+            return $this->failValidationErrors('analisis_id tidak valid');
+        }
+
+        // --- models
+        $mAnalisis = new AnalisisDataModel();
+        $mItemset  = new AprioriItemsetModel();
+        $mRule     = new AprioriRuleModel();
+        $mTx       = new TransactionModel();
+
+        // --- meta analisis
+        $a = $mAnalisis->find($analisisId);
+        if (!$a) return $this->failNotFound('analisis_data tidak ditemukan');
+
+        $start = $a['start_date'] ?? null;
+        $end   = $a['end_date']   ?? null;
+
+        // total transaksi pada periode analisis
+        if ($start && $end) {
+            $transactionTotal = $mTx->where('sale_date >=', $start)->where('sale_date <=', $end)->countAllResults();
+        } else {
+            $transactionTotal = $mTx->countAllResults();
+        }
+
+        // helper
+        $fmtSet = function(array $xs): string {
+            return '{'.implode(', ', $xs).'}';
+        };
+        $andJoin = function(array $xs): string {
+            $n = count($xs);
+            if ($n === 0) return '';
+            if ($n === 1) return $xs[0];
+            if ($n === 2) return $xs[0].' dan '.$xs[1];
+            return implode(', ', array_slice($xs, 0, $n-1)).', dan '.$xs[$n-1];
+        };
+        $decode = function($json){ return json_decode($json, true) ?: []; };
+
+        // --- top frequent itemset k=1,2,3 (urut freq desc, lalu support desc)
+        $top1 = $mItemset->where('analisis_id',$analisisId)->where('itemset_number',1)
+                        ->orderBy('frequency','DESC')->orderBy('support','DESC')->first();
+        $top2 = $mItemset->where('analisis_id',$analisisId)->where('itemset_number',2)
+                        ->orderBy('frequency','DESC')->orderBy('support','DESC')->first();
+        $top3 = $mItemset->where('analisis_id',$analisisId)->where('itemset_number',3)
+                        ->orderBy('frequency','DESC')->orderBy('support','DESC')->first();
+
+        // --- top association rules (confidence tertinggi) utk 2-itemset & 3-itemset
+        $rule2 = $mRule->where('analisis_id',$analisisId)->where('itemset_number',2)
+                    ->orderBy('confidence','DESC')->orderBy('support','DESC')->first();
+        $rule3 = $mRule->where('analisis_id',$analisisId)->where('itemset_number',3)
+                    ->orderBy('confidence','DESC')->orderBy('support','DESC')->first();
+
+        // --- rule lift tertinggi (semua k)
+        $topLift = $mRule->where('analisis_id',$analisisId)
+                        ->orderBy('lift','DESC')->first();
+
+        // kalimat insight
+        $insF1 = $top1 ? ($andJoin($decode($top1['itemsets'])) . ' merupakan produk individual yang paling sering muncul dalam transaksi')
+                    : 'Tidak ada produk individual yang dominan pada periode ini';
+        $insF2 = $top2 ? ($andJoin($decode($top2['itemsets'])) . ' merupakan pasangan produk yang sering dibeli bersama')
+                    : 'Tidak ada pasangan produk yang dominan pada periode ini';
+        $insF3 = $top3 ? ($andJoin($decode($top3['itemsets'])) . ' merupakan kombinasi tiga produk yang sering dibeli bersama')
+                    : 'Tidak ada kombinasi tiga produk yang dominan pada periode ini';
+
+        $insA2 = $rule2 ? ('Rule '.$fmtSet($decode($rule2['antecedents'])).' -> '.$fmtSet($decode($rule2['consequents']))
+                        .' menunjukkan hubungan dua produk yang sering dibeli bersama')
+                        : 'Tidak ada rule 2-itemset yang memenuhi kriteria';
+        $insA3 = $rule3 ? ('Rule '.$fmtSet($decode($rule3['antecedents'])).' -> '.$fmtSet($decode($rule3['consequents']))
+                        .' menunjukkan hubungan tiga produk yang sering dibeli bersama')
+                        : 'Tidak ada rule 3-itemset yang memenuhi kriteria';
+
+        $insLift = $topLift ? ('Rule '.$fmtSet($decode($topLift['antecedents'])).' -> '.$fmtSet($decode($topLift['consequents']))
+                            .' menunjukkan nilai kekuatan antar produk paling tinggi')
+                            : 'Tidak ada rule dengan nilai lift pada periode ini';
+
+        $insStrategis = 'Hasil analisis menunjukkan bahwa produk dengan frekuensi tinggi dan asosiasi kuat layak dijadikan target promosi atau penempatan bersama untuk meningkatkan penjualan';
+
+        // payload
+        $out = [
+            'id'               => (string)$a['id'],
+            'title'            => $a['title'],
+            'start_date'       => $start,
+            'end_date'         => $end,
+            // simpan sebagai string agar match contoh; ganti ke (float) bila mau numeric
+            'min_support'      => isset($a['min_support']) ? (string)$a['min_support'] : null,
+            'min_confidence'   => isset($a['min_confidence']) ? (string)$a['min_confidence'] : null,
+            'description'      => $a['description'],
+            'transaction_total'=> (int)$transactionTotal,
+
+            'insight_frequent1itemset'   => $insF1,
+            'insight_frequent2itemset'   => $insF2,
+            'insight_frequent3itemset'   => $insF3,
+            'insight_association2itemset'=> $insA2,
+            'insight_association3itemset'=> $insA3,
+            'insight_lift_ratio'         => $insLift,
+            'insight_strategis'          => $insStrategis,
+        ];
+
+        return $this->respond($out);
+    }
+
 }

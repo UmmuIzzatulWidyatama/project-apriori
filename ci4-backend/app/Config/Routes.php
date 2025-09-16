@@ -19,6 +19,7 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], function($routes) 
     $routes->get('report/association-itemset2/(:num)', 'ReportController::associationItemset2/$1');
     $routes->get('report/association-itemset3/(:num)', 'ReportController::associationItemset3/$1');
     $routes->get('report/lift/(:num)', 'ReportController::lift/$1');
+    $routes->get('report/kesimpulan/(:num)', 'ReportController::kesimpulan/$1');
 });
 //VIEW
 $routes->get('login', 'AuthController::loginView', ['namespace' => 'App\Controllers\Api']);
@@ -32,5 +33,5 @@ $routes->get('report/itemset1/(:num)','ReportController::itemset1View/$1',['name
 $routes->get('report/itemset2/(:num)','ReportController::itemset2View/$1',['namespace' => 'App\Controllers\Api']);
 $routes->get('report/itemset3/(:num)','ReportController::itemset3View/$1',['namespace' => 'App\Controllers\Api']);
 $routes->get('report/association-rule/(:num)','ReportController::associationRule/$1',['namespace' => 'App\Controllers\Api']);
-$routes->get('report/lift-ratio/(:num)','ReportController::liftRatio/$1',['namespace' => 'App\Controllers\Api']);
-$routes->get('report/kesimpulan/(:num)','ReportController::kesimpulan/$1',['namespace' => 'App\Controllers\Api']);
+$routes->get('report/lift-ratio/(:num)','ReportController::liftRatioView/$1',['namespace' => 'App\Controllers\Api']);
+$routes->get('report/kesimpulan/(:num)','ReportController::kesimpulanView/$1',['namespace' => 'App\Controllers\Api']);

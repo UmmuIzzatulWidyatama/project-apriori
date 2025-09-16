@@ -2,7 +2,7 @@
 <?= $this->section('content') ?>
 
 <?php
-  $s     = (int)($step ?? 7); // step aktif: Kesimpulan
+  $s     = (int)($step ?? 7);
   $steps = [1=>'Main Info',2=>'1-Itemset',3=>'2-Itemset',4=>'3-Itemset',5=>'Association Rule',6=>'Lift Ratio',7=>'Kesimpulan'];
 ?>
 
@@ -15,9 +15,13 @@
   .stepper .label{ font-size:.85rem; color:#6c757d; margin-top:6px; white-space:nowrap; }
   .stepper .active .bubble{ background:#000; color:#fff; border-color:#000; }
 
-  .table-sm th,.table-sm td{ padding:.5rem .6rem; }
-  .table-zebra tbody tr:nth-child(odd){ background:#f8f9fa; }
-  .table-zebra thead th{ background:#e9ecef; border-bottom:1px solid #ced4da; }
+  .box { border:1px solid #ced4da; border-radius:.5rem; padding:1rem; }
+  .meta-grid{ display:grid; grid-template-columns: 180px 12px 1fr; row-gap:.35rem; }
+  .meta-grid .k { font-size:16px; }
+  .insight-box{ border:1px solid #ced4da; border-radius:.5rem; padding:1rem; margin-top:1rem; }
+  .ins-row{ display:grid; grid-template-columns: 200px 12px 1fr; gap:.5rem .75rem; margin-bottom:.35rem; }
+  
+  .wrap { white-space:pre-wrap; }
 </style>
 
 <div class="container-fluid mt-4 px-3">
@@ -44,10 +48,37 @@
         </div>
 
         <div class="card-body">
-          
-          <div class="d-flex justify-content-between mt-3">
+          <!-- Ringkasan -->
+          <div class="box mb-3">
+            <div class="meta-grid small">
+              <div class="k">Nama Analisis</div><div>:</div><div id="v_title">–</div>
+              <div class="k">Deskripsi</div><div>:</div><div id="v_desc">–</div>
+              <div class="k">Tanggal Awal</div><div>:</div><div id="v_start">–</div>
+              <div class="k">Tanggal Akhir</div><div>:</div><div id="v_end">–</div>
+              <div class="k">Min Support</div><div>:</div><div id="v_min_support">–</div>
+              <div class="k">Min Confidence</div><div>:</div><div id="v_min_conf">–</div>
+              <div class="k">Jumlah Transaksi</div><div>:</div><div id="v_total">–</div>
+            </div>
+          </div>
+
+          <!-- Insight -->
+          <div class="insight-box">
+            <div class="ins-row"><div class="k">Frequent 1-Itemset</div><div>:</div><div id="i_f1" class="wrap">–</div></div>
+            <div class="ins-row"><div class="k">Frequent 2-Itemset</div><div>:</div><div id="i_f2" class="wrap">–</div></div>
+            <div class="ins-row"><div class="k">Frequent 3-Itemset</div><div>:</div><div id="i_f3" class="wrap">–</div></div>
+            <div class="ins-row"><div class="k">Association Rule 2-Itemset</div><div>:</div><div id="i_a2" class="wrap">–</div></div>
+            <div class="ins-row"><div class="k">Association Rule 3-Itemset</div><div>:</div><div id="i_a3" class="wrap">–</div></div>
+            <div class="ins-row"><div class="k">Lift Ratio</div><div>:</div><div id="i_lift" class="wrap">–</div></div>
+            <div class="ins-row"><div class="k">Insight Strategis</div><div>:</div><div id="i_strat" class="wrap">–</div></div>
+          </div>
+
+          <!-- Tombol bawah -->
+          <div class="d-flex flex-wrap gap-2 justify-content-between mt-3">
             <a class="btn btn-secondary" href="<?= esc($backUrl ?? site_url('report/lift-ratio/'.$reportId)) ?>">Sebelumnya</a>
-            <a class="btn btn-primary<?= empty($reportId) ? ' disabled' : '' ?>" href="<?= site_url('report') ?>">Selanjutnya</a>
+            <div class="d-flex gap-2">
+              <a class="btn btn-outline-dark" id="btnDownload" href="javascript:void(0)">Download Report</a>
+              <a class="btn btn-primary" href="<?= site_url('report') ?>">Kembali ke list</a>
+            </div>
           </div>
         </div>
       </div>
@@ -60,49 +91,49 @@
   const apiBase = "<?= rtrim(site_url('api/report'), '/') ?>";
   const id      = "<?= (int)($reportId ?? 0) ?>";
 
-  const els = {
-    state: document.getElementById('stateLift'),
-    tbody: document.querySelector('#tblLift tbody'),
-  };
+  // formatter angka
+  const n4  = (x, max=4) => (x==null || x==='') ? '–'
+               : new Intl.NumberFormat('en-US',{maximumFractionDigits:max, minimumFractionDigits:0, useGrouping:false}).format(Number(x));
+  const nInt= (x) => (x==null || x==='') ? '–'
+               : new Intl.NumberFormat('id-ID',{maximumFractionDigits:0}).format(Number(x));
 
-  // format angka tanpa trailing zero (maks 4 desimal)
-  const n4 = (x, max=4) => {
-    if (x == null || x === '') return '-';
-    return new Intl.NumberFormat('en-US', {
-      maximumFractionDigits: max,
-      minimumFractionDigits: 0,
-      useGrouping: false
-    }).format(Number(x));
-  };
-  const fmtSet = (arr) => `{${(arr || []).join(', ')}}`;
-
-  const makeRow = (r) => {
-    const a = r.antecedents ?? [];
-    const c = r.consequents ?? [];
-    const items = r.items ?? (fmtSet(a) + ' -> ' + fmtSet(c));
-    return `<tr>
-      <td>${items}</td>
-      <td class="text-end">${n4(r.lift, 4)}</td>
-    </tr>`;
-  };
+  const el = (id) => document.getElementById(id);
 
   (async () => {
     if (!id) return;
+
     try {
-      // urutkan by lift desc biar sesuai mockup
-      const res = await fetch(`${apiBase}/lift/${id}?order=lift&dir=DESC`, { headers:{'Accept':'application/json'} });
+      // >>>>>>>>> ambil dari API KESIMPULAN <<<<<<<<<
+      const res = await fetch(`${apiBase}/kesimpulan/${id}`, { headers:{'Accept':'application/json'} });
       if (!res.ok) throw new Error('HTTP '+res.status);
       const js = await res.json();
 
-      const rows = Array.isArray(js.data) ? js.data : [];
-      els.tbody.innerHTML = rows.length
-        ? rows.map(makeRow).join('')
-        : '<tr><td colspan="2" class="text-center text-muted">Tidak ada data.</td></tr>';
+      // meta
+      el('v_title').textContent       = js.title ?? '–';
+      el('v_desc').textContent        = js.description ?? '–';
+      el('v_start').textContent       = js.start_date ?? '–';
+      el('v_end').textContent         = js.end_date ?? '–';
+      el('v_min_support').textContent = (js.min_support    != null ? n4(js.min_support, 4)    : '–');
+      el('v_min_conf').textContent    = (js.min_confidence != null ? n4(js.min_confidence,4) : '–');
+      el('v_total').textContent       = (js.transaction_total != null ? nInt(js.transaction_total) : '–');
 
-      els.state.classList.add('d-none');
+      // insight lines
+      el('i_f1').textContent   = js.insight_frequent1itemset   ?? '–';
+      el('i_f2').textContent   = js.insight_frequent2itemset   ?? '–';
+      el('i_f3').textContent   = js.insight_frequent3itemset   ?? '–';
+      el('i_a2').textContent   = js.insight_association2itemset?? '–';
+      el('i_a3').textContent   = js.insight_association3itemset?? '–';
+      el('i_lift').textContent = js.insight_lift_ratio         ?? '–';
+      el('i_strat').textContent= js.insight_strategis          ?? '–';
+
+      // download (placeholder)
+      document.getElementById('btnDownload').addEventListener('click', () => {
+        alert('Fitur download report belum dihubungkan.');
+      });
+
     } catch (e) {
-      els.state.textContent = 'Gagal memuat Lift Ratio. ' + e.message;
       console.error(e);
+      alert('Gagal memuat kesimpulan: ' + e.message);
     }
   })();
 </script>
