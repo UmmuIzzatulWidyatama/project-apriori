@@ -24,6 +24,11 @@ class TransactionController extends BaseController
         return view('transaksi_list');
     }
 
+    public function uploadView()
+    {
+        return view('transaksi_upload');
+    }
+
     public function detailView()
     {
         return view('transaksi_detail');

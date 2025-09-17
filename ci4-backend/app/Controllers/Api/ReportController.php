@@ -717,4 +717,25 @@ class ReportController extends BaseController
         return $this->respond($out);
     }
 
+    public function delete($analisisId)
+    {
+        $id = (int)$analisisId;
+        $mAnalisis = new AnalisisDataModel();
+        $row = $mAnalisis->find($id);
+        if (!$row) {
+            return $this->failNotFound('Analisis tidak ditemukan');
+        }
+
+        if (! $mAnalisis->delete($id)) {
+            return $this->failServerError('Gagal menghapus data');
+        }
+
+        return $this->respondDeleted([
+            'message'     => 'Data berhasil dihapus',
+            'analisis_id' => $id,
+            'redirect_to' => site_url('report'),
+        ]);
+    }
+
+
 }

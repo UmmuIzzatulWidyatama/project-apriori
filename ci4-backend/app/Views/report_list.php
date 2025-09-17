@@ -2,7 +2,7 @@
 
 <?= $this->section('content') ?>
 
-<div class="container-fluid mt-4 px-3">
+<div class="container-fluid mt-4 px-3"> 
   <div class="row">
     <div class="col-12 col-lg-10 col-xl-9"> 
       <h4>Report Hasil Analisis Data</h4>
@@ -33,6 +33,7 @@
 <script>
     const apiBase       = "<?= site_url('api/report') ?>";
     const mainInfoBase  = "<?= rtrim(site_url('report/main-info'), '/') ?>";
+    const apiDelete = "<?= site_url('api/report/delete') ?>";
     let reports = [];
     const limit = 5;
     let page = 1;
@@ -66,6 +67,7 @@
           <td>
             <a href="${mainInfoBase}/${encodeURIComponent(rpt.id)}" class="btn btn-sm btn-primary">Detail</a>
             <button type="button" class="btn btn-sm btn-danger ms-1" onclick="deleterpt(${rpt.id})">Hapus</button>
+            
           </td>
         `;
         tbody.appendChild(row);
@@ -117,6 +119,33 @@
             console.error(e);
             alert('Terjadi kesalahan jaringan.');
         }
+    }
+
+    async function deleterpt(id){
+      if (!confirm('Yakin ingin menghapus data ini?')) return;
+
+      try {
+        const res = await fetch(`${apiDelete}/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        });
+
+        const js = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(js?.message || js?.error || 'Gagal menghapus analisis.');
+
+        // sukses → redirect bila API memberi redirect_to, kalau tidak reload halaman
+        if (js?.redirect_to) {
+          window.location.href = js.redirect_to;
+        } else {
+          location.reload();
+        }
+      } catch (e) {
+        console.error(e);
+        alert(e.message || 'Terjadi kesalahan jaringan.');
+      }
     }
 
 

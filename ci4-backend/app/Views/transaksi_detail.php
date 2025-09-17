@@ -2,9 +2,8 @@
 <?= $this->section('content') ?>
 
 <div class="container-fluid mt-4 px-3">
-  <h4>Detail Data Transaksi</h4>
-  <br>
-
+  <h4>Detail Transaksi</h4>
+  
   <div class="row">
     <div class="col-12 col-lg-10 col-xl-9">
       <div class="card shadow-sm">

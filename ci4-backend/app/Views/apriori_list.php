@@ -3,10 +3,10 @@
 <?= $this->section('content') ?>
 
 <div class="container-fluid mt-4 px-3">
-  <h3 class="fw-bold mb-4">Proses Apriori</h3>
-
+  
   <div class="row">
     <div class="col-12 col-lg-10 col-xl-9">
+      <h4>Proses Apriori</h4>
       <div class="card shadow-sm">
         <div class="card-body">
           <div id="resultBox" class="alert mt-3 d-none" role="alert"></div>
@@ -57,6 +57,8 @@
 
 <script>
 const apiRun = "<?= base_url('api/apriori/run') ?>";
+// base url untuk redirect ke main-info/{id}
+const reportMainInfoBase = "<?= site_url('report/main-info') ?>";
 
 function setLoading(on) {
   document.getElementById('btnProcess').disabled = on;
@@ -68,8 +70,8 @@ function showResult(type, msg) {
   el.className = 'alert mt-3 ' + (type === 'success' ? 'alert-success' : 'alert-danger');
   el.textContent = msg;
   el.classList.remove('d-none');
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
-
 
 document.getElementById('aprioriForm').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -77,7 +79,7 @@ document.getElementById('aprioriForm').addEventListener('submit', async (e) => {
   const payload = {
     start_date:      document.getElementById('start_date').value,
     end_date:        document.getElementById('end_date').value,
-    title:            document.getElementById('name').value.trim(),
+    title:           document.getElementById('name').value.trim(),
     min_support:     parseFloat(document.getElementById('min_support').value),
     min_confidence:  parseFloat(document.getElementById('min_confidence').value),
     description:     document.getElementById('description').value.trim(),
@@ -98,23 +100,42 @@ document.getElementById('aprioriForm').addEventListener('submit', async (e) => {
   }
 
   setLoading(true);
+  let willRedirect = false;
+
   try {
     const res  = await fetch(apiRun, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
       body: JSON.stringify(payload)
     });
     let json = null; try { json = await res.json(); } catch {}
-    if (!res.ok) throw new Error(json?.message || json?.error || 'Gagal memproses Apriori.');
 
-    showResult('success', json?.message || 'Proses Apriori berhasil dijalankan.');
+    if (!res.ok) {
+      throw new Error(json?.messages?.error || json?.message || 'Gagal memproses Apriori.');
+    }
+
+    // ====== SUKSES: tampilkan pesan 3 detik lalu redirect ======
+    const id = json?.analisis_id;
+    const target = json?.redirect_to
+      || (id ? `${reportMainInfoBase}/${id}` : "<?= site_url('report') ?>");
+
+    showResult('success', json?.message || 'Analisis berhasil dibuat');
+    willRedirect = true;                         // jangan re-enable tombol
+
+    setTimeout(() => { window.location.href = target; }, 2000);
+    
   } catch (err) {
     console.error(err);
     showResult('error', err.message || 'Terjadi kesalahan jaringan.');
   } finally {
-    setLoading(false);
+    if (!willRedirect) setLoading(false);        // tetap disable jika akan redirect
   }
 });
 </script>
+
 
 <?= $this->endSection() ?>

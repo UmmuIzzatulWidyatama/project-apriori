@@ -5,7 +5,10 @@
 <div class="container-fluid mt-4 px-3">
   <div class="row">
     <div class="col-12 col-lg-10 col-xl-9"> 
-      <h4>Daftar Transaksi</h4>
+      <h4>Daftar Transaksi</h4> 
+      <a href="<?= base_url('transaksi/upload') ?>?id=${trx.id}" class="btn btn-sm btn-primary" id="btnUpload">
+        <i class="fa fa-upload me-1"></i> Upload Data
+      </a>
 
       <div class="table-responsive">
         <table class="table table-bordered mt-3" id="transaksiTable">

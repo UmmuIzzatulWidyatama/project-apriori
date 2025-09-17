@@ -9,10 +9,9 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], function($routes) 
     $routes->delete('transactions/(:num)', 'TransactionController::delete/$1');
     $routes->post('transactions', 'TransactionController::create');
     $routes->post('apriori/run', 'AprioriController::run');
-    $routes->get('apriori/itemsets', 'AprioriController::itemsets');
-    $routes->get('apriori/rules', 'AprioriController::rules');
     $routes->get('report', 'ReportController::list');
     $routes->get('report/(:num)', 'ReportController::detail/$1');
+    $routes->delete('report/delete/(:num)', 'ReportController::delete/$1');
     $routes->get('report/itemset1/(:num)', 'ReportController::itemset1/$1');
     $routes->get('report/itemset2/(:num)', 'ReportController::itemset2/$1');
     $routes->get('report/itemset3/(:num)', 'ReportController::itemset3/$1');
@@ -26,6 +25,7 @@ $routes->get('login', 'AuthController::loginView', ['namespace' => 'App\Controll
 $routes->get('halaman-utama', 'HomeController::homeView', ['namespace' => 'App\Controllers\Api']);
 $routes->get('transaksi', 'TransactionController::transactionView', ['namespace' => 'App\Controllers\Api']);
 $routes->get('transaksi/detail', 'TransactionController::detailView', ['namespace' => 'App\Controllers\Api']);
+$routes->get('transaksi/upload', 'TransactionController::uploadView', ['namespace' => 'App\Controllers\Api']);
 $routes->get('apriori', 'AprioriController::aprioriView', ['namespace' => 'App\Controllers\Api']);
 $routes->get('report', 'ReportController::reportView', ['namespace' => 'App\Controllers\Api']);
 $routes->get('report/main-info/(:num)', 'ReportController::mainInfoView/$1', ['namespace' => 'App\Controllers\Api']);
@@ -35,3 +35,4 @@ $routes->get('report/itemset3/(:num)','ReportController::itemset3View/$1',['name
 $routes->get('report/association-rule/(:num)','ReportController::associationRule/$1',['namespace' => 'App\Controllers\Api']);
 $routes->get('report/lift-ratio/(:num)','ReportController::liftRatioView/$1',['namespace' => 'App\Controllers\Api']);
 $routes->get('report/kesimpulan/(:num)','ReportController::kesimpulanView/$1',['namespace' => 'App\Controllers\Api']);
+ 

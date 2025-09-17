@@ -80,37 +80,37 @@
 
           <div class="mb-3">
             <label class="form-label">Tanggal awal</label>
-            <input type="text" id="v_start_date" class="form-control" readonly placeholder="2025-08-01">
+            <input type="text" id="v_start_date" class="form-control" readonly>
           </div>
 
           <div class="mb-3">
             <label class="form-label">Tanggal akhir</label>
-            <input type="text" id="v_end_date" class="form-control" readonly placeholder="2025-08-05">
+            <input type="text" id="v_end_date" class="form-control" readonly >
           </div>
 
           <div class="mb-3">
             <label class="form-label">Nama</label>
-            <input type="text" id="v_name" class="form-control" readonly placeholder="Analisis Bulan Agustus">
+            <input type="text" id="v_name" class="form-control" readonly >
           </div>
 
           <div class="row g-3">
             <div class="col-md-6">
               <label class="form-label">Min Support</label>
-              <input type="text" id="v_min_support" class="form-control" readonly placeholder="0.3">
+              <input type="text" id="v_min_support" class="form-control" readonly >
             </div>
             <div class="col-md-6">
               <label class="form-label">Min Confidence</label>
-              <input type="text" id="v_min_confidence" class="form-control" readonly placeholder="0.3">
+              <input type="text" id="v_min_confidence" class="form-control" readonly >
             </div>
           </div>
 
           <div class="mb-3 mt-3">
             <label class="form-label">Deskripsi</label>
-            <textarea id="v_description" class="form-control" rows="2" readonly placeholder="example desc"></textarea>
+            <textarea id="v_description" class="form-control" rows="2" readonly ></textarea>
           </div>
 
           <div class="d-flex justify-content-between mt-2">
-            <a href="<?= esc($backUrl ?? site_url('report')) ?>" class="btn btn-secondary">Kembali</a>
+            <a href="<?= esc($backUrl ?? site_url('report')) ?>" class="btn btn-secondary">Kembali ke list</a>
             <a class="btn btn-primary<?= empty($reportId) ? ' disabled' : '' ?>" href="<?= site_url('report/itemset1/'.$reportId) ?>">Selanjutnya</a>  
           </div>
         </div>

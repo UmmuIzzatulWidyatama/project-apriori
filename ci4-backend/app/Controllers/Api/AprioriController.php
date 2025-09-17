@@ -93,12 +93,13 @@ class AprioriController extends BaseController
                 ]);
             }
 
-            // 6. Return response ke client
+            // 6. Return response ke client 
             return $this->respond([
-                'message' => 'Analisis berhasil dibuat',
-                'analisis_id' => $analisisId,
-                'itemsets' => $result['itemsets'],
-                'rules' => $result['rules']
+                'message'      => 'Analisis berhasil dibuat',
+                'analisis_id'  => (int)$analisisId,
+                'redirect_to'  => site_url('report/main-info/'.$analisisId),
+                'itemsets'     => $result['itemsets'],
+                'rules'        => $result['rules']
             ]);
         } catch (\Exception $e) {
             log_message('debug', json_encode($transactions));
