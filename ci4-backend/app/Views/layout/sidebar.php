@@ -2,11 +2,11 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title><?= $title ?? 'Sistem Apriori' ?></title>
+  <title><?= $title ?? 'Apriori Web App' ?></title>
   <link rel="stylesheet" href="<?= base_url('assets/bootstrap/css/bootstrap.min.css') ?>">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
-    :root { /* opsional: samakan skala font di semua halaman */
+    :root { 
       font-size: 16px;
     }
     body {

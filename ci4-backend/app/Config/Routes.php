@@ -4,6 +4,8 @@ $routes->get('/', 'Home::index');
 //API
 $routes->group('api', ['namespace' => 'App\Controllers\Api'], function($routes) {
     $routes->post('login', 'AuthController::login');
+    $routes->get('summary', 'HomeController::summary');
+    $routes->get('summary/top-products', 'HomeController::topProducts');
     $routes->get('transactions', 'TransactionController::list');
     $routes->get('transactions/(:num)', 'TransactionController::detail/$1');
     $routes->delete('transactions/(:num)', 'TransactionController::delete/$1');
@@ -12,11 +14,8 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], function($routes) 
     $routes->get('report', 'ReportController::list');
     $routes->get('report/(:num)', 'ReportController::detail/$1');
     $routes->delete('report/delete/(:num)', 'ReportController::delete/$1');
-    $routes->get('report/itemset1/(:num)', 'ReportController::itemset1/$1');
-    $routes->get('report/itemset2/(:num)', 'ReportController::itemset2/$1');
-    $routes->get('report/itemset3/(:num)', 'ReportController::itemset3/$1');
-    $routes->get('report/association-itemset2/(:num)', 'ReportController::associationItemset2/$1');
-    $routes->get('report/association-itemset3/(:num)', 'ReportController::associationItemset3/$1');
+    $routes->get('report/itemset/(:num)', 'ReportController::itemset/$1');
+    $routes->get('report/association/(:num)', 'ReportController::association/$1');
     $routes->get('report/lift/(:num)', 'ReportController::lift/$1');
     $routes->get('report/kesimpulan/(:num)', 'ReportController::kesimpulan/$1');
 });
@@ -29,10 +28,8 @@ $routes->get('transaksi/upload', 'TransactionController::uploadView', ['namespac
 $routes->get('apriori', 'AprioriController::aprioriView', ['namespace' => 'App\Controllers\Api']);
 $routes->get('report', 'ReportController::reportView', ['namespace' => 'App\Controllers\Api']);
 $routes->get('report/main-info/(:num)', 'ReportController::mainInfoView/$1', ['namespace' => 'App\Controllers\Api']);
-$routes->get('report/itemset1/(:num)','ReportController::itemset1View/$1',['namespace' => 'App\Controllers\Api']);
-$routes->get('report/itemset2/(:num)','ReportController::itemset2View/$1',['namespace' => 'App\Controllers\Api']);
-$routes->get('report/itemset3/(:num)','ReportController::itemset3View/$1',['namespace' => 'App\Controllers\Api']);
-$routes->get('report/association-rule/(:num)','ReportController::associationRule/$1',['namespace' => 'App\Controllers\Api']);
+$routes->get('report/itemset/(:num)','ReportController::itemsetView/$1',['namespace' => 'App\Controllers\Api']);
+$routes->get('report/association-rule/(:num)','ReportController::associationRuleView/$1',['namespace' => 'App\Controllers\Api']);
 $routes->get('report/lift-ratio/(:num)','ReportController::liftRatioView/$1',['namespace' => 'App\Controllers\Api']);
 $routes->get('report/kesimpulan/(:num)','ReportController::kesimpulanView/$1',['namespace' => 'App\Controllers\Api']);
  

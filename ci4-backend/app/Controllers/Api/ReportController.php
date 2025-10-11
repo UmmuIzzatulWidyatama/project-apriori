@@ -40,52 +40,23 @@ class ReportController extends BaseController
         ]);
     }
 
-    public function itemset1View($id)
+    public function itemsetView($id)
     {
         if (!$id) {
             return redirect()->to(base_url('report'))
                             ->with('error', 'Data tidak ditemukan');
         }
 
-        return view('report_detail_itemset1', [
+        return view('report_detail_itemset', [
             'reportId' => (int)$id,
             'step'     => 2,
             'backUrl'  => base_url('report/main-info/'. $id),
-            'nextUrl'  => base_url('report/itemset2/'. $id),
+            'nextUrl'  => base_url('report/association-rule/'. $id)
         ]);
     }
 
-    public function itemset2View($id)
-    {
-        if (!$id) {
-            return redirect()->to(base_url('report'))
-                            ->with('error', 'Data tidak ditemukan');
-        }
 
-        return view('report_detail_itemset2', [
-            'reportId' => (int)$id,
-            'step'     => 3,
-            'backUrl'  => base_url('report/itemset1/'. $id),
-            'nextUrl'  => base_url('report/itemset3/'. $id),
-        ]);
-    }
-
-    public function itemset3View($id)
-    {
-        if (!$id) {
-            return redirect()->to(base_url('report'))
-                            ->with('error', 'Data tidak ditemukan');
-        }
-
-        return view('report_detail_itemset3', [
-            'reportId' => (int)$id,
-            'step'     => 4,
-            'backUrl'  => base_url('report/itemset2/'. $id),
-            'nextUrl'  => base_url('report/association-rule/'. $id),
-        ]);
-    }
-
-    public function associationRule($id)
+    public function associationRuleView($id)
     {
         if (!$id) {
             return redirect()->to(base_url('report'))
@@ -94,8 +65,8 @@ class ReportController extends BaseController
 
         return view('report_detail_association', [
             'reportId' => (int)$id,
-            'step'     => 5,
-            'backUrl'  => base_url('report/itemset3/'. $id),
+            'step'     => 3,
+            'backUrl'  => base_url('report/itemset/'. $id),
             'nextUrl'  => base_url('report/lift-ratio/'. $id),
         ]);
     }
@@ -109,7 +80,7 @@ class ReportController extends BaseController
 
         return view('report_detail_lift', [
             'reportId' => (int)$id,
-            'step'     => 6,
+            'step'     => 4,
             'backUrl'  => base_url('report/association-rule/'. $id),
             'nextUrl'  => base_url('report/itemset1/'. $id),
         ]);
@@ -124,7 +95,7 @@ class ReportController extends BaseController
 
         return view('report_detail_kesimpulan', [
             'reportId' => (int)$id,
-            'step'     => 7,
+            'step'     => 5,
             'backUrl'  => base_url('report/lift-ratio/'. $id),
             'nextUrl'  => base_url('report'. $id),
         ]);
@@ -170,201 +141,6 @@ class ReportController extends BaseController
         if (!$row) return $this->failNotFound('Data tidak ditemukan');
 
         return $this->respond(['status' => 'success', 'data' => $row]);
-    }
-
-    public function itemset1($analisisId)
-    {
-        $analisisId = (int)$analisisId;
-        if ($analisisId <= 0) {
-            return $this->failValidationErrors('Data tidak ditemukan');
-        }
-
-        // --- Ambil periode dari analisis_data
-        $analisis = (new AnalisisDataModel())->find($analisisId);
-        if (!$analisis) {
-            return $this->failNotFound('analisis data tidak ditemukan');
-        }
-        $start = $analisis['start_date'] ?? null;
-        $end   = $analisis['end_date'] ?? null;
-        $minSupport  = isset($analisis['min_support']) ? (float)$analisis['min_support'] : null;
-
-        // --- Hitung total transaksi pada periode tsb dari tabel transactions
-        $txModel = new TransactionModel();
-        if ($start && $end) {
-            $transactionTotal = $txModel
-                ->where('sale_date >=', $start)
-                ->where('sale_date <=', $end)
-                ->countAllResults();
-        } else {
-            // fallback kalau periodenya kosong: hitung semua
-            $transactionTotal = $txModel->countAllResults();
-        }
-
-        // --- Ambil itemset 1
-        $limit = (int)($this->request->getGet('limit') ?? 1000);
-        if ($limit <= 0 || $limit > 10000) $limit = 1000;
-
-        $model = new AprioriItemsetModel(); // returnType 'array'
-        $rows  = $model->select('id, analisis_id, itemsets, itemset_number, support, frequency, created_at')
-                       ->where('analisis_id', $analisisId)
-                       ->where('itemset_number', 1)
-                       ->orderBy('frequency', 'DESC')
-                       ->orderBy('support', 'DESC')
-                       ->findAll($limit);
-
-        $data = [];
-        foreach ($rows as $r) {
-            $support = (float)$r['support'];
-            $data[] = [
-                'id'              => (int)$r['id'],
-                'analisis_id'     => (int)$r['analisis_id'],
-                'itemsets'        => json_decode($r['itemsets'], true),
-                'itemset_number'  => (int)$r['itemset_number'], // 1
-                'support'         => $support,                  // 0..1
-                'support_percent' => round($support * 100, 2),  // untuk tampilan
-                'frequency'       => (int)$r['frequency'],
-                'created_at'      => $r['created_at'],
-            ];
-        }
-
-        return $this->respond([
-            'analisis_id'       => $analisisId,
-            'transaction_total'  => (int)$transactionTotal,
-            'min_support'       => $minSupport,
-            'itemset_number'    => 1,
-            'count'             => count($data),
-            'data'              => $data,
-        ]);
-    }
-
-    public function itemset2($analisisId)
-    {
-        $analisisId = (int) $analisisId;
-        if ($analisisId <= 0) {
-            return $this->failValidationErrors('Data tidak ditemukan');
-        }
-
-        // --- Ambil periode dari analisis_data
-        $analisis = (new AnalisisDataModel())->find($analisisId);
-        if (!$analisis) {
-            return $this->failNotFound('analisis_data tidak ditemukan');
-        }
-        $start = $analisis['start_date'] ?? null;
-        $end   = $analisis['end_date'] ?? null;
-        $minSupport  = isset($analisis['min_support']) ? (float)$analisis['min_support'] : null;
-
-        // --- Hitung total transaksi pada periode tsb dari tabel transactions
-        $txModel = new TransactionModel();
-        if ($start && $end) {
-            $transactionTotal = $txModel
-                ->where('sale_date >=', $start)
-                ->where('sale_date <=', $end)
-                ->countAllResults();
-        } else {
-            // fallback kalau periodenya kosong: hitung semua
-            $transactionTotal = $txModel->countAllResults();
-        }
-
-        // --- Ambil itemset 2
-        $limit = (int) ($this->request->getGet('limit') ?? 1000);
-        if ($limit <= 0 || $limit > 10000) $limit = 1000;
-
-        $model = new AprioriItemsetModel(); // pastikan returnType='array' di model
-        $rows  = $model->select('id, analisis_id, itemsets, itemset_number, support, frequency, created_at')
-                       ->where('analisis_id', $analisisId)
-                       ->where('itemset_number', 2)
-                       ->orderBy('frequency', 'DESC')
-                       ->orderBy('support', 'DESC')
-                       ->findAll($limit);
-
-        $data = [];
-        foreach ($rows as $r) {
-            $support = (float)$r['support'];
-            $data[] = [
-                'id'              => (int)$r['id'],
-                'analisis_id'     => (int)$r['analisis_id'],
-                'itemsets'        => json_decode($r['itemsets'], true),
-                'itemset_number'  => (int)$r['itemset_number'], // 2
-                'support'         => $support,                  // 0..1
-                'support_percent' => round($support * 100, 2),  // untuk UI
-                'frequency'       => (int)$r['frequency'],
-                'created_at'      => $r['created_at'],
-            ];
-        }
-
-        return $this->respond([
-            'analisis_id'    => $analisisId,
-            'transaction_total'  => (int)$transactionTotal,
-            'min_support'       => $minSupport,
-            'itemset_number' => 2,
-            'count'          => count($data),
-            'data'           => $data,
-        ]);
-    }
-
-    public function itemset3($analisisId)
-    {
-        $analisisId = (int) $analisisId;
-        if ($analisisId <= 0) {
-            return $this->failValidationErrors('Data tidak ditemukan');
-        }
-
-        // --- Ambil periode dari analisis_data
-        $analisis = (new AnalisisDataModel())->find($analisisId);
-        if (!$analisis) {
-            return $this->failNotFound('analisis_data tidak ditemukan');
-        }
-        $start = $analisis['start_date'] ?? null;
-        $end   = $analisis['end_date'] ?? null;
-        $minSupport  = isset($analisis['min_support']) ? (float)$analisis['min_support'] : null;
-
-        // --- Hitung total transaksi pada periode tsb dari tabel transactions
-        $txModel = new TransactionModel();
-        if ($start && $end) {
-            $transactionTotal = $txModel
-                ->where('sale_date >=', $start)
-                ->where('sale_date <=', $end)
-                ->countAllResults();
-        } else {
-            // fallback kalau periodenya kosong: hitung semua
-            $transactionTotal = $txModel->countAllResults();
-        }
-
-        // --- Ambil itemset 3
-        $limit = (int) ($this->request->getGet('limit') ?? 1000);
-        if ($limit <= 0 || $limit > 10000) $limit = 1000;
-
-        $model = new AprioriItemsetModel(); // returnType='array'
-        $rows  = $model->select('id, analisis_id, itemsets, itemset_number, support, frequency, created_at')
-                       ->where('analisis_id', $analisisId)
-                       ->where('itemset_number', 3)
-                       ->orderBy('frequency', 'DESC')
-                       ->orderBy('support', 'DESC')
-                       ->findAll($limit);
-
-        $data = [];
-        foreach ($rows as $r) {
-            $support = (float)$r['support'];
-            $data[] = [
-                'id'              => (int)$r['id'],
-                'analisis_id'     => (int)$r['analisis_id'],
-                'itemsets'        => json_decode($r['itemsets'], true),
-                'itemset_number'  => (int)$r['itemset_number'], // 3
-                'support'         => $support,
-                'support_percent' => round($support * 100, 2),
-                'frequency'       => (int)$r['frequency'],
-                'created_at'      => $r['created_at'],
-            ];
-        }
-
-        return $this->respond([
-            'analisis_id'    => $analisisId,
-            'transaction_total'  => (int)$transactionTotal,
-            'min_support'       => $minSupport,
-            'itemset_number' => 3,
-            'count'          => count($data),
-            'data'           => $data,
-        ]);
     }
 
     // GET /api/report/association-itemset2/{analisisId}
@@ -614,75 +390,116 @@ class ReportController extends BaseController
         ]);
     }
 
-    public function kesimpulan($analisisId)
+    // app/Controllers/Api/ReportController.php
+
+    public function kesimpulan(int $analisisId)
     {
-        $analisisId = (int)$analisisId;
         if ($analisisId <= 0) {
             return $this->failValidationErrors('analisis_id tidak valid');
         }
 
-        // --- models
+        // --- Models
         $mAnalisis = new AnalisisDataModel();
         $mItemset  = new AprioriItemsetModel();
         $mRule     = new AprioriRuleModel();
         $mTx       = new TransactionModel();
 
-        // --- meta analisis
+        // --- Meta analisis
         $a = $mAnalisis->find($analisisId);
         if (!$a) return $this->failNotFound('analisis_data tidak ditemukan');
 
         $start = $a['start_date'] ?? null;
         $end   = $a['end_date']   ?? null;
 
-        // total transaksi pada periode analisis
+        // Total transaksi dalam periode (fallback: semua)
         if ($start && $end) {
-            $transactionTotal = $mTx->where('sale_date >=', $start)->where('sale_date <=', $end)->countAllResults();
+            $transactionTotal = $mTx->where('sale_date >=', $start)
+                                    ->where('sale_date <=', $end)
+                                    ->countAllResults();
         } else {
             $transactionTotal = $mTx->countAllResults();
         }
 
-        // helper
-        $fmtSet = function(array $xs): string {
-            return '{'.implode(', ', $xs).'}';
+        // --- Helpers
+        $decode = static fn($json) => json_decode($json, true) ?: [];
+        $fmtSet = static fn(array $xs) => '{'.implode(', ', $xs).'}';
+        $fmtNum = static function($x, int $max=4) {
+            if ($x === null || $x === '') return '–';
+            $s = rtrim(rtrim(number_format((float)$x, $max, '.', ''), '0'), '.');
+            return ($s === '') ? '0' : $s;
         };
-        $andJoin = function(array $xs): string {
+        $andJoin = static function(array $xs): string {
             $n = count($xs);
             if ($n === 0) return '';
             if ($n === 1) return $xs[0];
             if ($n === 2) return $xs[0].' dan '.$xs[1];
             return implode(', ', array_slice($xs, 0, $n-1)).', dan '.$xs[$n-1];
         };
-        $decode = function($json){ return json_decode($json, true) ?: []; };
 
-        // --- top frequent itemset k=1,2,3 (urut freq desc, lalu support desc)
-        $top1 = $mItemset->where('analisis_id',$analisisId)->where('itemset_number',1)
-                        ->orderBy('frequency','DESC')->orderBy('support','DESC')->first();
-        $top2 = $mItemset->where('analisis_id',$analisisId)->where('itemset_number',2)
-                        ->orderBy('frequency','DESC')->orderBy('support','DESC')->first();
-        $top3 = $mItemset->where('analisis_id',$analisisId)->where('itemset_number',3)
-                        ->orderBy('frequency','DESC')->orderBy('support','DESC')->first();
+        // =============================
+        // 1) INSIGHT SEMUA FREQUENT ITEMSET (k = 1..n) – HANYA TOP SUPP PER k
+        // =============================
+        $freqRows = $mItemset->where('analisis_id', $analisisId)
+                            ->orderBy('itemset_number', 'ASC')
+                            ->orderBy('support', 'DESC')     // utamakan support tertinggi
+                            ->orderBy('frequency', 'DESC')   // tie-break: frekuensi lebih besar
+                            ->findAll();
 
-        // --- top association rules (confidence tertinggi) utk 2-itemset & 3-itemset
+        // Ambil hanya 1 terbaik per k (karena sudah diurutkan: first-per-k)
+        $bestByK = []; // [k => row]
+        foreach ($freqRows as $r) {
+            $k = (int)($r['itemset_number'] ?? 0);
+            if (!isset($bestByK[$k])) {
+                $bestByK[$k] = $r;
+            }
+        }
+
+        // Bangun insight dari hanya kandidat terbaik per k
+        $insightsByK = [];   // { 1:[{...}], 2:[{...}], ... } (masing-masing berisi 1 elemen)
+        $insightsFlat = [];  // ["...", "...", ...] (satu kalimat per k)
+
+        foreach ($bestByK as $k => $r) {
+            $items = $decode($r['itemsets'] ?? '[]');
+            $freq  = isset($r['frequency']) ? (int)$r['frequency'] : null;
+            $supp  = isset($r['support'])   ? (float)$r['support'] : null;
+
+            // Frasa natural: 1=produk individual, 2=pasangan produk, >=3=kombinasi k produk
+            $frasa = ($k === 1) ? 'produk individual'
+                : (($k === 2) ? 'pasangan produk' : "kombinasi {$k} produk");
+
+            $text = sprintf(
+                '%s %s paling menonjol (support %s; frekuensi %s).',
+                $fmtSet($items),
+                $frasa,
+                $fmtNum($supp),
+                ($freq === null ? '–' : (string)$freq)
+            );
+
+            $insightsByK[$k] = [[
+                'itemsets'       => $items,
+                'itemset_number' => $k,
+                'frequency'      => $freq,
+                'support'        => $supp,
+                'text'           => $text,
+            ]];
+
+            $insightsFlat[] = $text;
+        }
+
+        // =============================
+        // 2) INSIGHT ASOSIASI & LIFT
+        // =============================
         $rule2 = $mRule->where('analisis_id',$analisisId)->where('itemset_number',2)
                     ->orderBy('confidence','DESC')->orderBy('support','DESC')->first();
         $rule3 = $mRule->where('analisis_id',$analisisId)->where('itemset_number',3)
                     ->orderBy('confidence','DESC')->orderBy('support','DESC')->first();
-
-        // --- rule lift tertinggi (semua k)
         $topLift = $mRule->where('analisis_id',$analisisId)
                         ->orderBy('lift','DESC')->first();
-
-        // kalimat insight
-        $insF1 = $top1 ? ($andJoin($decode($top1['itemsets'])) . ' merupakan produk individual yang paling sering muncul dalam transaksi')
-                    : 'Tidak ada produk individual yang dominan pada periode ini';
-        $insF2 = $top2 ? ($andJoin($decode($top2['itemsets'])) . ' merupakan pasangan produk yang sering dibeli bersama')
-                    : 'Tidak ada pasangan produk yang dominan pada periode ini';
-        $insF3 = $top3 ? ($andJoin($decode($top3['itemsets'])) . ' merupakan kombinasi tiga produk yang sering dibeli bersama')
-                    : 'Tidak ada kombinasi tiga produk yang dominan pada periode ini';
 
         $insA2 = $rule2 ? ('Rule '.$fmtSet($decode($rule2['antecedents'])).' -> '.$fmtSet($decode($rule2['consequents']))
                         .' menunjukkan hubungan dua produk yang sering dibeli bersama')
                         : 'Tidak ada rule 2-itemset yang memenuhi kriteria';
+
         $insA3 = $rule3 ? ('Rule '.$fmtSet($decode($rule3['antecedents'])).' -> '.$fmtSet($decode($rule3['consequents']))
                         .' menunjukkan hubungan tiga produk yang sering dibeli bersama')
                         : 'Tidak ada rule 3-itemset yang memenuhi kriteria';
@@ -693,21 +510,24 @@ class ReportController extends BaseController
 
         $insStrategis = 'Hasil analisis menunjukkan bahwa produk dengan frekuensi tinggi dan asosiasi kuat layak dijadikan target promosi atau penempatan bersama untuk meningkatkan penjualan';
 
-        // payload
+        // =============================
+        // 4) Payload
+        // =============================
         $out = [
-            'id'               => (string)$a['id'],
-            'title'            => $a['title'],
-            'start_date'       => $start,
-            'end_date'         => $end,
-            // simpan sebagai string agar match contoh; ganti ke (float) bila mau numeric
-            'min_support'      => isset($a['min_support']) ? (string)$a['min_support'] : null,
-            'min_confidence'   => isset($a['min_confidence']) ? (string)$a['min_confidence'] : null,
-            'description'      => $a['description'],
-            'transaction_total'=> (int)$transactionTotal,
+            'id'                => (string)$a['id'],
+            'title'             => $a['title'],
+            'description'       => $a['description'],
+            'start_date'        => $start,
+            'end_date'          => $end,
+            'min_support'       => isset($a['min_support']) ? (string)$a['min_support'] : null,
+            'min_confidence'    => isset($a['min_confidence']) ? (string)$a['min_confidence'] : null,
+            'transaction_total' => (int)$transactionTotal,
 
-            'insight_frequent1itemset'   => $insF1,
-            'insight_frequent2itemset'   => $insF2,
-            'insight_frequent3itemset'   => $insF3,
+            // >>> Insight untuk SEMUA frequent itemset (k=1..n)
+            //     contoh struktur: { "1":[{itemsets:[..],text:".."},..], "2":[..], ... }
+            'insights_frequent_all'      => $insightsByK,
+            
+            // Insight ringkas (tetap disediakan)
             'insight_association2itemset'=> $insA2,
             'insight_association3itemset'=> $insA3,
             'insight_lift_ratio'         => $insLift,
@@ -716,6 +536,7 @@ class ReportController extends BaseController
 
         return $this->respond($out);
     }
+
 
     public function delete($analisisId)
     {
@@ -737,5 +558,117 @@ class ReportController extends BaseController
         ]);
     }
 
+    public function itemset($analisisId)
+    {
+        $id = (int)$analisisId;
+        if ($id <= 0) {
+            return $this->failValidationErrors('analisis_id tidak valid');
+        }
 
+        $mAnalisis = new AnalisisDataModel();
+        $mItemset  = new AprioriItemsetModel();
+        $mTx       = new TransactionModel();
+
+        // meta analisis
+        $a = $mAnalisis->find($id);
+        if (!$a) return $this->failNotFound('Analisis tidak ditemukan');
+
+        $start = $a['start_date'] ?? null;
+        $end   = $a['end_date']   ?? null;
+
+        // total transaksi dalam rentang analisis (kalau ada tanggal)
+        $transactionTotal = ($start && $end)
+            ? $mTx->where('sale_date >=', $start)->where('sale_date <=', $end)->countAllResults()
+            : $mTx->countAllResults();
+
+        // ambil semua itemset untuk analisis ini
+        $rows = $mItemset->select('itemsets, itemset_number, support, frequency')
+                         ->where('analisis_id', $id)
+                         ->orderBy('itemset_number', 'ASC')
+                         ->orderBy('frequency', 'DESC')
+                         ->orderBy('support', 'DESC')
+                         ->findAll();
+
+        // kelompokkan per ukuran itemset: 1,2,3, ...
+        $grouped = [];
+        foreach ($rows as $r) {
+            $k = (int)$r['itemset_number'];
+            $grouped[$k] = $grouped[$k] ?? [];
+            $grouped[$k][] = [
+                'itemset_number' => $k,
+                'itemsets'       => json_decode($r['itemsets'], true) ?: [],
+                'support'        => isset($r['support']) ? (float)$r['support'] : null,
+                'frequency'      => isset($r['frequency']) ? (int)$r['frequency'] : null,
+            ];
+        }
+
+        // bentuk payload
+        return $this->respond([
+            'analisis_id'       => $id,
+            'title'             => $a['title'] ?? null,
+            'start_date'        => $start,
+            'end_date'          => $end,
+            'min_support'       => isset($a['min_support']) ? (float)$a['min_support'] : null,
+            'transaction_total' => (int)$transactionTotal,
+            // data dikelompokkan: { "1": [...], "2": [...], "3": [...], "4": [...], ... }
+            'data'              => $grouped,
+        ]);
+    }
+
+    public function association($analisisId)
+    {
+        $id = (int)$analisisId;
+        if ($id <= 0) {
+            return $this->failValidationErrors('analisis_id tidak valid');
+        }
+
+        $mAnalisis = new AnalisisDataModel();
+        $mRule     = new AprioriRuleModel();
+
+        // meta analisis
+        $a = $mAnalisis->find($id);
+        if (!$a) return $this->failNotFound('Analisis tidak ditemukan');
+
+        // ambil semua rules utk analisis ini
+        $rows = $mRule->select('antecedents, consequents, itemset_number, support, confidence, lift, support_antecedents, support_consequents')
+                      ->where('analisis_id', $id)
+                      ->orderBy('itemset_number', 'ASC')
+                      ->orderBy('confidence', 'DESC')
+                      ->orderBy('support', 'DESC')
+                      ->findAll();
+
+        // kelompokkan per ukuran itemset
+        $grouped = [];
+        foreach ($rows as $r) {
+            $k   = (int)($r['itemset_number'] ?? 0);
+            $ant = json_decode($r['antecedents'], true) ?: [];
+            $con = json_decode($r['consequents'], true) ?: [];
+
+            $item = '{'.implode(', ', $ant).'} -> {'.implode(', ', $con).'}';
+
+            $grouped[$k] = $grouped[$k] ?? [];
+            $grouped[$k][] = [
+                'itemset_number'       => $k,
+                'antecedents'          => $ant,
+                'consequents'          => $con,
+                'items'                => $item, // "{A, B} -> {C}"
+                'support'              => isset($r['support']) ? (float)$r['support'] : null,                 // support X ∪ Y
+                'support_antecedents'  => isset($r['support_antecedents']) ? (float)$r['support_antecedents'] : null, // support X
+                'support_consequents'  => isset($r['support_consequents']) ? (float)$r['support_consequents'] : null, // support Y
+                'confidence'           => isset($r['confidence']) ? (float)$r['confidence'] : null,
+                'lift'                 => isset($r['lift']) ? (float)$r['lift'] : null,
+            ];
+        }
+
+        // payload
+        return $this->respond([
+            'analisis_id'     => $id,
+            'title'           => $a['title'] ?? null,
+            'start_date'      => $a['start_date'] ?? null,
+            'end_date'        => $a['end_date'] ?? null,
+            'min_confidence'  => isset($a['min_confidence']) ? (float)$a['min_confidence'] : null,
+            // data dikelompokkan: { "2": [...], "3": [...], ... }
+            'data'            => $grouped,
+        ]);
+    }
 }

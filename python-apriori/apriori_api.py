@@ -26,8 +26,7 @@ def run_apriori():
         freq = apriori(
             encoded,
             min_support=min_support,
-            use_colnames=True,
-            max_len=3
+            use_colnames=True
         )
 
         # Jika tidak ada frequent itemset, langsung kembalikan kosong

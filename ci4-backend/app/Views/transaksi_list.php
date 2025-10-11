@@ -105,7 +105,6 @@
             const json = await res.json().catch(() => ({}));
 
             if (res.ok) {
-            // hapus dari array lokal dan render ulang (tanpa reload halaman)
             transactions = transactions.filter(t => String(t.id) !== String(id));
 
             const totalPages = Math.max(1, Math.ceil(transactions.length / limit));

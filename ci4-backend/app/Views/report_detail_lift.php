@@ -3,7 +3,7 @@
 
 <?php
   $s     = (int)($step ?? 6); // step aktif: Lift Ratio
-  $steps = [1=>'Main Info',2=>'1-Itemset',3=>'2-Itemset',4=>'3-Itemset',5=>'Association Rule',6=>'Lift Ratio',7=>'Kesimpulan'];
+  $steps = [1=>'Main Info',2=>'Frequent Itemset',3=>'Association Rule',4=>'Lift Ratio',5=>'Kesimpulan'];
 ?>
 
 <style>
@@ -57,14 +57,12 @@
               <tbody></tbody>
             </table>
           </div>
-
-          <div class="d-flex justify-content-between mt-3">
-            <a class="btn btn-secondary" href="<?= esc($backUrl ?? site_url('report')) ?>">Sebelumnya</a>
-            <a class="btn btn-primary<?= empty($reportId) ? ' disabled' : '' ?>" href="<?= site_url('report/kesimpulan/'.$reportId) ?>">Selanjutnya</a>
-          </div>
         </div>
       </div>
-
+      <div class="d-flex justify-content-between mt-3">
+        <a class="btn btn-secondary" href="<?= esc($backUrl ?? site_url('report')) ?>">Sebelumnya</a>
+        <a class="btn btn-primary<?= empty($reportId) ? ' disabled' : '' ?>" href="<?= site_url('report/kesimpulan/'.$reportId) ?>">Selanjutnya</a>
+      </div> 
     </div>
   </div>
 </div>

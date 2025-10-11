@@ -4,7 +4,7 @@
 <?php
   // step aktif (default 1) & daftar step
   $s      = (int)($step ?? 1);
-  $steps  = [1=>'Main Info',2=>'1-Itemset',3=>'2-Itemset',4=>'3-Itemset',5=>'Association Rule',6=>'Lift Ratio',7=>'Kesimpulan'];
+  $steps = [1=>'Main Info',2=>'Frequent Itemset',3=>'Association Rule',4=>'Lift Ratio',5=>'Kesimpulan'];
   $total  = count($steps);
 ?>
 
@@ -108,14 +108,12 @@
             <label class="form-label">Deskripsi</label>
             <textarea id="v_description" class="form-control" rows="2" readonly ></textarea>
           </div>
-
-          <div class="d-flex justify-content-between mt-2">
-            <a href="<?= esc($backUrl ?? site_url('report')) ?>" class="btn btn-secondary">Kembali ke list</a>
-            <a class="btn btn-primary<?= empty($reportId) ? ' disabled' : '' ?>" href="<?= site_url('report/itemset1/'.$reportId) ?>">Selanjutnya</a>  
-          </div>
         </div>
       </div>
-
+      <div class="d-flex justify-content-between mt-2">
+        <a href="<?= esc($backUrl ?? site_url('report')) ?>" class="btn btn-secondary">Kembali ke list</a>
+        <a class="btn btn-primary<?= empty($reportId) ? ' disabled' : '' ?>" href="<?= site_url('report/itemset/'.$reportId) ?>">Selanjutnya</a>  
+      </div>
     </div>
   </div>
 </div>

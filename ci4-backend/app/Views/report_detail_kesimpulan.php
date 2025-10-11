@@ -1,9 +1,9 @@
 <?= $this->extend('layout/sidebar') ?>
 <?= $this->section('content') ?>
 
-<?php
-  $s     = (int)($step ?? 7);
-  $steps = [1=>'Main Info',2=>'1-Itemset',3=>'2-Itemset',4=>'3-Itemset',5=>'Association Rule',6=>'Lift Ratio',7=>'Kesimpulan'];
+<?php 
+  $s     = (int)($step ?? 5);
+  $steps = [1=>'Main Info',2=>'Frequent Itemset',3=>'Association Rule',4=>'Lift Ratio',5=>'Kesimpulan'];
 ?>
 
 <style>
@@ -71,15 +71,13 @@
             <div class="ins-row"><div class="k">Lift Ratio</div><div>:</div><div id="i_lift" class="wrap">–</div></div>
             <div class="ins-row"><div class="k">Insight Strategis</div><div>:</div><div id="i_strat" class="wrap">–</div></div>
           </div>
-
-          <!-- Tombol bawah -->
-          <div class="d-flex flex-wrap gap-2 justify-content-between mt-3">
-            <a class="btn btn-secondary" href="<?= esc($backUrl ?? site_url('report/lift-ratio/'.$reportId)) ?>">Sebelumnya</a>
-            <div class="d-flex gap-2">
-              <a class="btn btn-outline-dark" id="btnDownload" href="javascript:void(0)">Download Report</a>
-              <a class="btn btn-primary" href="<?= site_url('report') ?>">Kembali ke list</a>
-            </div>
-          </div>
+        </div>
+      </div>
+      <div class="d-flex flex-wrap gap-2 justify-content-between mt-3">
+        <a class="btn btn-secondary" href="<?= esc($backUrl ?? site_url('report/lift-ratio/'.$reportId)) ?>">Sebelumnya</a>
+        <div class="d-flex gap-2">
+          <a class="btn btn-outline-dark" id="btnDownload" href="javascript:void(0)">Download Report</a>
+          <a class="btn btn-primary" href="<?= site_url('report') ?>">Kembali ke list</a>
         </div>
       </div>
 
