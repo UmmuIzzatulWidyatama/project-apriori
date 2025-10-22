@@ -9,7 +9,8 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], function($routes) 
     $routes->get('transactions', 'TransactionController::list');
     $routes->get('transactions/(:num)', 'TransactionController::detail/$1');
     $routes->delete('transactions/(:num)', 'TransactionController::delete/$1');
-    $routes->post('transactions', 'TransactionController::create');
+    $routes->post('transactions/upload', 'TransactionController::upload');
+    $routes->post('transactions/save', 'TransactionController::save');
     $routes->post('apriori/run', 'AprioriController::run');
     $routes->get('report', 'ReportController::list');
     $routes->get('report/(:num)', 'ReportController::detail/$1');
@@ -18,6 +19,7 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], function($routes) 
     $routes->get('report/association/(:num)', 'ReportController::association/$1');
     $routes->get('report/lift/(:num)', 'ReportController::lift/$1');
     $routes->get('report/kesimpulan/(:num)', 'ReportController::kesimpulan/$1');
+    $routes->get('report/download-report/(:num)', 'ReportController::downloadReport/$1');
 });
 //VIEW
 $routes->get('login', 'AuthController::loginView', ['namespace' => 'App\Controllers\Api']);

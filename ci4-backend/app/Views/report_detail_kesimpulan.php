@@ -20,7 +20,6 @@
   .meta-grid .k { font-size:16px; }
   .insight-box{ border:1px solid #ced4da; border-radius:.5rem; padding:1rem; margin-top:1rem; }
   .ins-row{ display:grid; grid-template-columns: 200px 12px 1fr; gap:.5rem .75rem; margin-bottom:.35rem; }
-  
   .wrap { white-space:pre-wrap; }
 </style>
 
@@ -62,21 +61,26 @@
           </div>
 
           <!-- Insight -->
-          <div class="insight-box">
-            <div class="ins-row"><div class="k">Frequent 1-Itemset</div><div>:</div><div id="i_f1" class="wrap">–</div></div>
-            <div class="ins-row"><div class="k">Frequent 2-Itemset</div><div>:</div><div id="i_f2" class="wrap">–</div></div>
-            <div class="ins-row"><div class="k">Frequent 3-Itemset</div><div>:</div><div id="i_f3" class="wrap">–</div></div>
-            <div class="ins-row"><div class="k">Association Rule 2-Itemset</div><div>:</div><div id="i_a2" class="wrap">–</div></div>
-            <div class="ins-row"><div class="k">Association Rule 3-Itemset</div><div>:</div><div id="i_a3" class="wrap">–</div></div>
+          <div class="insight-box" id="insightBox">
+            <!-- Frequent (dinamis) -->
+            <div id="ins_frequent_wrap"></div>
+
+            <!-- Association (dinamis) -->
+            <div id="ins_assoc_wrap"></div>
+
+            <!-- Lainnya -->
             <div class="ins-row"><div class="k">Lift Ratio</div><div>:</div><div id="i_lift" class="wrap">–</div></div>
             <div class="ins-row"><div class="k">Insight Strategis</div><div>:</div><div id="i_strat" class="wrap">–</div></div>
           </div>
         </div>
       </div>
+
       <div class="d-flex flex-wrap gap-2 justify-content-between mt-3">
         <a class="btn btn-secondary" href="<?= esc($backUrl ?? site_url('report/lift-ratio/'.$reportId)) ?>">Sebelumnya</a>
         <div class="d-flex gap-2">
-          <a class="btn btn-outline-dark" id="btnDownload" href="javascript:void(0)">Download Report</a>
+          <a class="btn btn-outline-dark" href="<?= site_url('api/report/download-report/'.$reportId) ?>">
+            Download Report
+          </a>
           <a class="btn btn-primary" href="<?= site_url('report') ?>">Kembali ke list</a>
         </div>
       </div>
@@ -97,6 +101,79 @@
 
   const el = (id) => document.getElementById(id);
 
+  // render Frequent k-Itemset (dinamis) dari insights_frequent_all
+  function renderFrequentInsights(mapObj){
+    const wrap = document.getElementById('ins_frequent_wrap');
+    wrap.innerHTML = '';
+
+    if (!mapObj || typeof mapObj !== 'object') {
+      wrap.innerHTML = '<div class="ins-row"><div class="k">Frequent Itemset</div><div>:</div><div class="wrap">–</div></div>';
+      return;
+    }
+
+    const ks = Object.keys(mapObj)
+      .filter(k => !Number.isNaN(Number(k)))
+      .map(k => Number(k))
+      .sort((a,b)=>a-b);
+
+    if (ks.length === 0) {
+      wrap.innerHTML = '<div class="ins-row"><div class="k">Frequent Itemset</div><div>:</div><div class="wrap">–</div></div>';
+      return;
+    }
+
+    ks.forEach(k => {
+      const arr = Array.isArray(mapObj[String(k)]) ? mapObj[String(k)] : [];
+      const first = arr[0] || {};
+      const text = first.text || '–';
+
+      const row = document.createElement('div');
+      row.className = 'ins-row';
+      row.innerHTML = `
+        <div class="k">Frequent ${k}-Itemset</div>
+        <div>:</div>
+        <div class="wrap">${text}</div>
+      `;
+      wrap.appendChild(row);
+    });
+  }
+
+  // render Association Rule k-Itemset (dinamis) dari insights_association_all
+  function renderAssociationInsights(mapObj){
+    const wrap = document.getElementById('ins_assoc_wrap');
+    wrap.innerHTML = '';
+
+    if (!mapObj || typeof mapObj !== 'object') {
+      wrap.innerHTML = '<div class="ins-row"><div class="k">Association Rule</div><div>:</div><div class="wrap">–</div></div>';
+      return;
+    }
+
+    // mulai dari k=2 (rule minimal X->Y)
+    const ks = Object.keys(mapObj)
+      .filter(k => !Number.isNaN(Number(k)) && Number(k) >= 2)
+      .map(k => Number(k))
+      .sort((a,b)=>a-b);
+
+    if (ks.length === 0) {
+      wrap.innerHTML = '<div class="ins-row"><div class="k">Association Rule</div><div>:</div><div class="wrap">–</div></div>';
+      return;
+    }
+
+    ks.forEach(k => {
+      const arr = Array.isArray(mapObj[String(k)]) ? mapObj[String(k)] : [];
+      const first = arr[0] || {};
+      const text = first.text || '–';
+
+      const row = document.createElement('div');
+      row.className = 'ins-row';
+      row.innerHTML = `
+        <div class="k">Association Rule ${k}-Itemset</div>
+        <div>:</div>
+        <div class="wrap">${text}</div>
+      `;
+      wrap.appendChild(row);
+    });
+  }
+
   (async () => {
     if (!id) return;
 
@@ -115,19 +192,15 @@
       el('v_min_conf').textContent    = (js.min_confidence != null ? n4(js.min_confidence,4) : '–');
       el('v_total').textContent       = (js.transaction_total != null ? nInt(js.transaction_total) : '–');
 
-      // insight lines
-      el('i_f1').textContent   = js.insight_frequent1itemset   ?? '–';
-      el('i_f2').textContent   = js.insight_frequent2itemset   ?? '–';
-      el('i_f3').textContent   = js.insight_frequent3itemset   ?? '–';
-      el('i_a2').textContent   = js.insight_association2itemset?? '–';
-      el('i_a3').textContent   = js.insight_association3itemset?? '–';
-      el('i_lift').textContent = js.insight_lift_ratio         ?? '–';
-      el('i_strat').textContent= js.insight_strategis          ?? '–';
+      // frequent (dinamis)
+      renderFrequentInsights(js.insights_frequent_all);
 
-      // download (placeholder)
-      document.getElementById('btnDownload').addEventListener('click', () => {
-        alert('Fitur download report belum dihubungkan.');
-      });
+      // association (dinamis)
+      renderAssociationInsights(js.insights_association_all);
+
+      // lainnya
+      el('i_lift').textContent = js.insight_lift_ratio          ?? '–';
+      el('i_strat').textContent= js.insight_strategis           ?? '–';
 
     } catch (e) {
       console.error(e);

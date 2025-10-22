@@ -4,9 +4,9 @@
 
 <div class="container-fluid mt-4 px-3">
   <div class="row">
-    <div class="col-12 col-lg-10 col-xl-9"> 
+    <div class="col-12 col-lg-11 col-xxl-10"> 
       <h4>Daftar Transaksi</h4> 
-      <a href="<?= base_url('transaksi/upload') ?>?id=${trx.id}" class="btn btn-sm btn-primary" id="btnUpload">
+      <a href="<?= base_url('transaksi/upload') ?>" class="btn btn-sm btn-primary" id="btnUpload">
         <i class="fa fa-upload me-1"></i> Upload Data
       </a>
 
@@ -34,93 +34,82 @@
 </div>
 
 <script>
-    const apiBase = "<?= base_url('api/transactions') ?>";
-    let transactions = [];
-    const limit = 5;
-    let page = 1;
+  const apiBase = "<?= base_url('api/transactions') ?>";
+  let transactions = [];
+  let total = 0;
+  const limit = 10; // tampilkan 10 per halaman di UI
+  let page = 1;
 
-    async function fetchTransactions() {
-        try {
-            const res = await fetch("<?= base_url('api/transactions') ?>");
-            const json = await res.json();
-            transactions = json.data || [];
-            renderTable();
-            renderPagination();
-        } catch (err) {
-            alert("Gagal memuat data transaksi");
-            console.error(err);
-        }
+  async function fetchTransactions() {
+    try {
+      const res = await fetch(`${apiBase}?limit=${limit}&page=${page}`);
+      const json = await res.json();
+      transactions = json.data || [];
+      total = json.meta?.total ?? 0;
+      renderTable();
+      renderPagination();
+    } catch (err) {
+      console.error(err);
+      alert("Gagal memuat data transaksi");
     }
+  }
 
-    function renderTable() {
-        const tbody = document.querySelector("#transaksiTable tbody");
-        tbody.innerHTML = "";
+  function renderTable() {
+    const tbody = document.querySelector("#transaksiTable tbody");
+    tbody.innerHTML = "";
+    transactions.forEach(trx => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${trx.id}</td>
+        <td>${trx.sale_date}</td>
+        <td>${trx.transaction_number || '-'}</td>
+        <td>${trx.items}</td>
+        <td>
+          <a href="<?= base_url('transaksi/detail') ?>?id=${trx.id}" class="btn btn-sm btn-primary">Detail</a>
+          <button type="button" class="btn btn-sm btn-danger ms-1" onclick="deleteTrx(${trx.id})">Hapus</button>
+        </td>`;
+      tbody.appendChild(row);
+    });
+  }
 
-        const start = (page - 1) * limit;
-        const paginated = transactions.slice(start, start + limit);
+  function renderPagination() {
+    const pagination = document.getElementById("pagination");
+    pagination.innerHTML = "";
+    const totalPages = Math.max(1, Math.ceil(total / limit));
 
-        paginated.forEach((trx, index) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${trx.id}</td>
-                <td>${trx.sale_date}</td>
-                <td>${trx.transaction_number || '-'}</td>
-                <td>${trx.items}</td>
-                <td>
-                    <a href="<?= base_url('transaksi/detail') ?>?id=${trx.id}" class="btn btn-sm btn-primary">Detail</a>
-                    <button type="button" class="btn btn-sm btn-danger ms-1" onclick="deleteTrx(${trx.id})">Hapus</button>
-                </td>
-            `;
-            tbody.appendChild(row);
-        });
+    for (let i = 1; i <= totalPages; i++) {
+      const li = document.createElement("li");
+      li.className = "page-item" + (i === page ? " active" : "");
+      li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+      li.addEventListener("click", (e) => {
+        e.preventDefault();
+        page = i;
+        fetchTransactions();
+      });
+      pagination.appendChild(li);
     }
+  }
 
-    function renderPagination() {
-        const total = transactions.length;
-        const totalPages = Math.ceil(total / limit);
-        const pagination = document.getElementById("pagination");
-        pagination.innerHTML = "";
-
-        for (let i = 1; i <= totalPages; i++) {
-            const li = document.createElement("li");
-            li.className = "page-item" + (i === page ? " active" : "");
-            li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
-            li.addEventListener("click", () => {
-                page = i;
-                renderTable();
-                renderPagination();
-            });
-            pagination.appendChild(li);
-        }
+  async function deleteTrx(id) {
+    if (!confirm('Yakin ingin menghapus transaksi ini?')) return;
+    try {
+      const res = await fetch(`${apiBase}/${id}`, { method: 'DELETE', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        // Setelah hapus, refetch agar total & page sinkron
+        const totalPagesBefore = Math.max(1, Math.ceil(total / limit));
+        await fetchTransactions();
+        const totalPagesAfter = Math.max(1, Math.ceil(total / limit));
+        if (page > totalPagesAfter) { page = totalPagesAfter; await fetchTransactions(); }
+      } else {
+        alert(json.message || json.error || 'Gagal menghapus transaksi.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Terjadi kesalahan jaringan.');
     }
+  }
 
-    async function deleteTrx(id) {
-        if (!confirm('Yakin ingin menghapus transaksi ini?')) return;
-
-        try {
-            const res = await fetch(`${apiBase}/${id}`, {
-            method: 'DELETE',
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
-            const json = await res.json().catch(() => ({}));
-
-            if (res.ok) {
-            transactions = transactions.filter(t => String(t.id) !== String(id));
-
-            const totalPages = Math.max(1, Math.ceil(transactions.length / limit));
-            if (page > totalPages) page = totalPages;
-
-            renderTable();
-            renderPagination();
-            } else {
-            alert(json.message || json.error || 'Gagal menghapus transaksi.');
-            }
-        } catch (e) {
-            console.error(e);
-            alert('Terjadi kesalahan jaringan.');
-        }
-    }
-
-
-    document.addEventListener("DOMContentLoaded", fetchTransactions);
+  document.addEventListener("DOMContentLoaded", fetchTransactions);
 </script>
+

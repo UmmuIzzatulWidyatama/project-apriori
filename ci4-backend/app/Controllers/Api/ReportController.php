@@ -9,6 +9,10 @@ use App\Models\AprioriItemsetModel;
 use App\Models\TransactionModel;
 use App\Models\AprioriRuleModel;
 
+use Dompdf\Dompdf;
+use Dompdf\Options;
+
+
 class ReportController extends BaseController
 {
     use ResponseTrait;
@@ -390,153 +394,6 @@ class ReportController extends BaseController
         ]);
     }
 
-    // app/Controllers/Api/ReportController.php
-
-    public function kesimpulan(int $analisisId)
-    {
-        if ($analisisId <= 0) {
-            return $this->failValidationErrors('analisis_id tidak valid');
-        }
-
-        // --- Models
-        $mAnalisis = new AnalisisDataModel();
-        $mItemset  = new AprioriItemsetModel();
-        $mRule     = new AprioriRuleModel();
-        $mTx       = new TransactionModel();
-
-        // --- Meta analisis
-        $a = $mAnalisis->find($analisisId);
-        if (!$a) return $this->failNotFound('analisis_data tidak ditemukan');
-
-        $start = $a['start_date'] ?? null;
-        $end   = $a['end_date']   ?? null;
-
-        // Total transaksi dalam periode (fallback: semua)
-        if ($start && $end) {
-            $transactionTotal = $mTx->where('sale_date >=', $start)
-                                    ->where('sale_date <=', $end)
-                                    ->countAllResults();
-        } else {
-            $transactionTotal = $mTx->countAllResults();
-        }
-
-        // --- Helpers
-        $decode = static fn($json) => json_decode($json, true) ?: [];
-        $fmtSet = static fn(array $xs) => '{'.implode(', ', $xs).'}';
-        $fmtNum = static function($x, int $max=4) {
-            if ($x === null || $x === '') return '–';
-            $s = rtrim(rtrim(number_format((float)$x, $max, '.', ''), '0'), '.');
-            return ($s === '') ? '0' : $s;
-        };
-        $andJoin = static function(array $xs): string {
-            $n = count($xs);
-            if ($n === 0) return '';
-            if ($n === 1) return $xs[0];
-            if ($n === 2) return $xs[0].' dan '.$xs[1];
-            return implode(', ', array_slice($xs, 0, $n-1)).', dan '.$xs[$n-1];
-        };
-
-        // =============================
-        // 1) INSIGHT SEMUA FREQUENT ITEMSET (k = 1..n) – HANYA TOP SUPP PER k
-        // =============================
-        $freqRows = $mItemset->where('analisis_id', $analisisId)
-                            ->orderBy('itemset_number', 'ASC')
-                            ->orderBy('support', 'DESC')     // utamakan support tertinggi
-                            ->orderBy('frequency', 'DESC')   // tie-break: frekuensi lebih besar
-                            ->findAll();
-
-        // Ambil hanya 1 terbaik per k (karena sudah diurutkan: first-per-k)
-        $bestByK = []; // [k => row]
-        foreach ($freqRows as $r) {
-            $k = (int)($r['itemset_number'] ?? 0);
-            if (!isset($bestByK[$k])) {
-                $bestByK[$k] = $r;
-            }
-        }
-
-        // Bangun insight dari hanya kandidat terbaik per k
-        $insightsByK = [];   // { 1:[{...}], 2:[{...}], ... } (masing-masing berisi 1 elemen)
-        $insightsFlat = [];  // ["...", "...", ...] (satu kalimat per k)
-
-        foreach ($bestByK as $k => $r) {
-            $items = $decode($r['itemsets'] ?? '[]');
-            $freq  = isset($r['frequency']) ? (int)$r['frequency'] : null;
-            $supp  = isset($r['support'])   ? (float)$r['support'] : null;
-
-            // Frasa natural: 1=produk individual, 2=pasangan produk, >=3=kombinasi k produk
-            $frasa = ($k === 1) ? 'produk individual'
-                : (($k === 2) ? 'pasangan produk' : "kombinasi {$k} produk");
-
-            $text = sprintf(
-                '%s %s paling menonjol (support %s; frekuensi %s).',
-                $fmtSet($items),
-                $frasa,
-                $fmtNum($supp),
-                ($freq === null ? '–' : (string)$freq)
-            );
-
-            $insightsByK[$k] = [[
-                'itemsets'       => $items,
-                'itemset_number' => $k,
-                'frequency'      => $freq,
-                'support'        => $supp,
-                'text'           => $text,
-            ]];
-
-            $insightsFlat[] = $text;
-        }
-
-        // =============================
-        // 2) INSIGHT ASOSIASI & LIFT
-        // =============================
-        $rule2 = $mRule->where('analisis_id',$analisisId)->where('itemset_number',2)
-                    ->orderBy('confidence','DESC')->orderBy('support','DESC')->first();
-        $rule3 = $mRule->where('analisis_id',$analisisId)->where('itemset_number',3)
-                    ->orderBy('confidence','DESC')->orderBy('support','DESC')->first();
-        $topLift = $mRule->where('analisis_id',$analisisId)
-                        ->orderBy('lift','DESC')->first();
-
-        $insA2 = $rule2 ? ('Rule '.$fmtSet($decode($rule2['antecedents'])).' -> '.$fmtSet($decode($rule2['consequents']))
-                        .' menunjukkan hubungan dua produk yang sering dibeli bersama')
-                        : 'Tidak ada rule 2-itemset yang memenuhi kriteria';
-
-        $insA3 = $rule3 ? ('Rule '.$fmtSet($decode($rule3['antecedents'])).' -> '.$fmtSet($decode($rule3['consequents']))
-                        .' menunjukkan hubungan tiga produk yang sering dibeli bersama')
-                        : 'Tidak ada rule 3-itemset yang memenuhi kriteria';
-
-        $insLift = $topLift ? ('Rule '.$fmtSet($decode($topLift['antecedents'])).' -> '.$fmtSet($decode($topLift['consequents']))
-                            .' menunjukkan nilai kekuatan antar produk paling tinggi')
-                            : 'Tidak ada rule dengan nilai lift pada periode ini';
-
-        $insStrategis = 'Hasil analisis menunjukkan bahwa produk dengan frekuensi tinggi dan asosiasi kuat layak dijadikan target promosi atau penempatan bersama untuk meningkatkan penjualan';
-
-        // =============================
-        // 4) Payload
-        // =============================
-        $out = [
-            'id'                => (string)$a['id'],
-            'title'             => $a['title'],
-            'description'       => $a['description'],
-            'start_date'        => $start,
-            'end_date'          => $end,
-            'min_support'       => isset($a['min_support']) ? (string)$a['min_support'] : null,
-            'min_confidence'    => isset($a['min_confidence']) ? (string)$a['min_confidence'] : null,
-            'transaction_total' => (int)$transactionTotal,
-
-            // >>> Insight untuk SEMUA frequent itemset (k=1..n)
-            //     contoh struktur: { "1":[{itemsets:[..],text:".."},..], "2":[..], ... }
-            'insights_frequent_all'      => $insightsByK,
-            
-            // Insight ringkas (tetap disediakan)
-            'insight_association2itemset'=> $insA2,
-            'insight_association3itemset'=> $insA3,
-            'insight_lift_ratio'         => $insLift,
-            'insight_strategis'          => $insStrategis,
-        ];
-
-        return $this->respond($out);
-    }
-
 
     public function delete($analisisId)
     {
@@ -671,4 +528,159 @@ class ReportController extends BaseController
             'data'            => $grouped,
         ]);
     }
+
+    // === REPLACE: kesimpulan() ===
+    public function kesimpulan(int $analisisId)
+    {
+        if ($analisisId <= 0) {
+            return $this->failValidationErrors('analisis_id tidak valid');
+        }
+
+        $data = $this->makeKesimpulanData($analisisId);
+        if (isset($data['error'])) {
+            return $this->failNotFound($data['error']);
+        }
+
+        return $this->respond($data);
+    }
+
+    // === REPLACE: downloadReport() ===
+    public function downloadReport(int $analisisId)
+    {
+        if ($analisisId <= 0) {
+            return $this->failValidationErrors('analisis_id tidak valid');
+        }
+
+        $data = $this->makeKesimpulanData($analisisId);
+        if (isset($data['error'])) {
+            return $this->failNotFound($data['error']);
+        }
+
+        // view PDF yang sudah kamu buat sebelumnya
+        $html = view('download_report', $data);
+
+        $opt = new \Dompdf\Options();
+        $opt->set('isRemoteEnabled', false);          
+        $opt->set('isHtml5ParserEnabled', true);
+        $opt->set('isFontSubsettingEnabled', true);
+
+        $pdf = new \Dompdf\Dompdf($opt);
+        $pdf->loadHtml($html, 'UTF-8');
+        $pdf->setPaper('A4', 'portrait');
+        $pdf->render();
+
+        $filename = 'Laporan_Apriori_'.preg_replace('/[^\w\-]+/u','_',$data['title'] ?? 'report').'.pdf';
+
+        return $this->response
+            ->setHeader('Content-Type', 'application/pdf')
+            ->setHeader('Content-Disposition', 'attachment; filename="'.$filename.'"')
+            ->setBody($pdf->output());
+    }
+
+    /**
+     * === NEW: Satu-satunya sumber logic kesimpulan (pengganti buildKesimpulanData yg DIHAPUS) ===
+     * Mengembalikan array payload yang sama dengan API /kesimpulan.
+     */
+    private function makeKesimpulanData(int $analisisId): array
+    {
+        $mAnalisis = new AnalisisDataModel();
+        $mItemset  = new AprioriItemsetModel();
+        $mRule     = new AprioriRuleModel();
+        $mTx       = new TransactionModel();
+
+        $a = $mAnalisis->find($analisisId);
+        if (!$a) {
+            return ['error' => 'analisis_data tidak ditemukan'];
+        }
+
+        $start = $a['start_date'] ?? null;
+        $end   = $a['end_date']   ?? null;
+
+        $transactionTotal = ($start && $end)
+            ? $mTx->where('sale_date >=', $start)->where('sale_date <=', $end)->countAllResults()
+            : $mTx->countAllResults();
+
+        // helpers
+        $decode = static fn($json) => json_decode($json, true) ?: [];
+        $fmtSet = static fn(array $xs) => '{'.implode(', ', $xs).'}';
+
+        // Frequent (top support per k)
+        $freqRows = $mItemset->where('analisis_id', $analisisId)
+                            ->orderBy('itemset_number','ASC')
+                            ->orderBy('support','DESC')
+                            ->orderBy('frequency','DESC')
+                            ->findAll();
+        $bestFreqByK = [];
+        foreach ($freqRows as $r) {
+            $k=(int)($r['itemset_number'] ?? 0);
+            if (!isset($bestFreqByK[$k])) $bestFreqByK[$k] = $r;
+        }
+        $insightsFreq = [];
+        foreach ($bestFreqByK as $k=>$r) {
+            $items = $decode($r['itemsets'] ?? '[]');
+            $frasa = ($k===1)?'produk individual':(($k===2)?'pasangan produk':"kombinasi {$k} produk");
+            $insightsFreq[(string)$k] = [[
+                'itemsets'       => $items,
+                'itemset_number' => $k,
+                'frequency'      => isset($r['frequency']) ? (int)$r['frequency'] : null,
+                'support'        => isset($r['support']) ? (float)$r['support'] : null,
+                'text'           => sprintf('%s %s yang sering muncul dalam transaksi.', $fmtSet($items), $frasa),
+            ]];
+        }
+
+        // Association (top support per k; konsisten pakai angka untuk frasa)
+        $rulesAll = $mRule->where('analisis_id', $analisisId)
+                        ->orderBy('itemset_number','ASC')
+                        ->orderBy('support','DESC')
+                        ->orderBy('confidence','DESC')
+                        ->findAll();
+        $bestRuleByK = [];
+        foreach ($rulesAll as $rr) {
+            $k = (int)($rr['itemset_number'] ?? 0);
+            if ($k < 2) continue;
+            if (!isset($bestRuleByK[$k])) $bestRuleByK[$k] = $rr;
+        }
+        $insightsAssoc = [];
+        foreach ($bestRuleByK as $k=>$rr){
+            $aItems = $decode($rr['antecedents'] ?? '[]');
+            $cItems = $decode($rr['consequents'] ?? '[]');
+            $insightsAssoc[(string)$k] = [[
+                'itemset_number' => $k,
+                'antecedents'    => $aItems,
+                'consequents'    => $cItems,
+                'support'        => isset($rr['support']) ? (float)$rr['support'] : null,
+                'confidence'     => isset($rr['confidence']) ? (float)$rr['confidence'] : null,
+                'lift'           => isset($rr['lift']) ? (float)$rr['lift'] : null,
+                'text'           => sprintf(
+                    'Rule %s -> %s menunjukkan hubungan %d produk yang sering dibeli bersama.',
+                    $fmtSet($aItems), $fmtSet($cItems), $k
+                ),
+            ]];
+        }
+
+        // Lift tertinggi
+        $topLift = $mRule->where('analisis_id',$analisisId)->orderBy('lift','DESC')->first();
+        $insLift = $topLift
+            ? ('Rule '.$fmtSet($decode($topLift['antecedents'])).' -> '.$fmtSet($decode($topLift['consequents'])).' menunjukkan nilai kekuatan antar produk paling tinggi')
+            : 'Tidak ada rule dengan nilai lift pada periode ini';
+
+        $insStrategis = 'Hasil analisis menunjukkan bahwa produk dengan frekuensi tinggi dan asosiasi kuat layak dijadikan target promosi atau penempatan bersama untuk meningkatkan penjualan';
+
+        return [
+            'id'                     => (string)$a['id'],
+            'title'                  => $a['title'],
+            'description'            => $a['description'],
+            'start_date'             => $start,
+            'end_date'               => $end,
+            'min_support'            => isset($a['min_support']) ? (string)$a['min_support'] : null,
+            'min_confidence'         => isset($a['min_confidence']) ? (string)$a['min_confidence'] : null,
+            'transaction_total'      => (int)$transactionTotal,
+            'insights_frequent_all'  => $insightsFreq,
+            'insights_association_all'=> $insightsAssoc,
+            'insight_lift_ratio'     => $insLift,
+            'insight_strategis'      => $insStrategis,
+        ];
+    }
+
+    
 }

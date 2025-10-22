@@ -5,7 +5,7 @@
   <h4>Detail Transaksi</h4>
   
   <div class="row">
-    <div class="col-12 col-lg-10 col-xl-9">
+    <div class="col-12 col-lg-11 col-xxl-10">
       <div class="card shadow-sm">
         <div class="card-body">
           <div class="mb-3">
@@ -32,10 +32,9 @@
               </tbody>
             </table>
           </div>
-
-          <a href="<?= site_url('transaksi') ?>" class="btn btn-secondary mt-3">Kembali</a>
         </div>
       </div>
+      <a href="<?= site_url('transaksi') ?>" class="btn btn-secondary mt-3">Kembali</a>
     </div>
   </div>
 </div>

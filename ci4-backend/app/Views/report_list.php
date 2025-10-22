@@ -4,7 +4,7 @@
 
 <div class="container-fluid mt-4 px-3"> 
   <div class="row">
-    <div class="col-12 col-lg-10 col-xl-9"> 
+    <div class="col-12 col-lg-11 col-xxl-10"> 
       <h4>Report Hasil Analisis Data</h4>
 
       <div class="table-responsive">
@@ -31,35 +31,36 @@
 </div>
 
 <script>
-    const apiBase       = "<?= site_url('api/report') ?>";
-    const mainInfoBase  = "<?= rtrim(site_url('report/main-info'), '/') ?>";
-    const apiDelete = "<?= site_url('api/report/delete') ?>";
-    let reports = [];
-    const limit = 5;
-    let page = 1;
+    const apiBase      = "<?= site_url('api/report') ?>";
+    const mainInfoBase = "<?= rtrim(site_url('report/main-info'), '/') ?>";
+    const apiDelete    = "<?= site_url('api/report/delete') ?>";
 
-    async function fetchReports() {
+    let page  = 1;
+    const limit = 10;
+    let meta  = { totalPages: 1 };
+
+    async function fetchReports(goToPage = 1) {
+      page = goToPage;
       try {
-        const res = await fetch(apiBase);
+        const res  = await fetch(`${apiBase}?page=${page}&limit=${limit}`, {
+          headers: { 'Accept':'application/json', 'X-Requested-With':'XMLHttpRequest' }
+        });
         const json = await res.json();
-        reports = json.data || [];
-        renderTable();
-        renderPagination();
+        const rows = json.data || [];
+        meta = json.meta || { totalPages: 1 };
+
+        renderTable(rows);             // <<< TIDAK slicing lagi
+        renderPagination(meta.totalPages);
       } catch (err) {
         alert("Gagal memuat data report");
         console.error(err);
       }
     }
 
-    function renderTable() {
+    function renderTable(rows) {
       const tbody = document.querySelector("#reportTable tbody");
-      tbody.innerHTML = "";
-      const start = (page - 1) * limit;
-      const paginated = reports.slice(start, start + limit);
-
-      paginated.forEach((rpt) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
+      tbody.innerHTML = rows.map(rpt => `
+        <tr>
           <td>${rpt.id}</td>
           <td>${rpt.title}</td>
           <td>${rpt.start_date}</td>
@@ -67,30 +68,21 @@
           <td>
             <a href="${mainInfoBase}/${encodeURIComponent(rpt.id)}" class="btn btn-sm btn-primary">Detail</a>
             <button type="button" class="btn btn-sm btn-danger ms-1" onclick="deleterpt(${rpt.id})">Hapus</button>
-            
           </td>
-        `;
-        tbody.appendChild(row);
-      });
+        </tr>
+      `).join('');
     }
 
-    function renderPagination() {
-        const total = reports.length;
-        const totalPages = Math.ceil(total / limit);
-        const pagination = document.getElementById("pagination");
-        pagination.innerHTML = "";
-
-        for (let i = 1; i <= totalPages; i++) {
-            const li = document.createElement("li");
-            li.className = "page-item" + (i === page ? " active" : "");
-            li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
-            li.addEventListener("click", () => {
-                page = i;
-                renderTable();
-                renderPagination();
-            });
-            pagination.appendChild(li);
-        }
+    function renderPagination(totalPages) {
+      const pagination = document.getElementById("pagination");
+      pagination.innerHTML = "";
+      for (let i = 1; i <= totalPages; i++) {
+        const li = document.createElement("li");
+        li.className = "page-item" + (i === page ? " active" : "");
+        li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+        li.addEventListener("click", (e) => { e.preventDefault(); fetchReports(i); });
+        pagination.appendChild(li);
+      }
     }
 
     async function deleterpt(id) {
@@ -149,6 +141,6 @@
     }
 
 
-    document.addEventListener("DOMContentLoaded", fetchReports);
+    document.addEventListener("DOMContentLoaded", () => fetchReports(1));
 </script>
 <?= $this->endSection() ?>

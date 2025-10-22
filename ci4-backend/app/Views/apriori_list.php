@@ -5,7 +5,7 @@
 <div class="container-fluid mt-4 px-3">
   
   <div class="row">
-    <div class="col-12 col-lg-10 col-xl-9">
+    <div class="col-12 col-lg-11 col-xxl-10">
       <h4>Proses Apriori</h4>
       <div class="card shadow-sm">
         <div class="card-body">
@@ -42,15 +42,13 @@
                 <textarea class="form-control" id="description" rows="3" placeholder="Catatan analisis (opsional)"></textarea>
               </div>
             </div>
-
-            <div class="mt-3 d-flex align-items-center">
-              <button id="btnProcess" class="btn btn-primary" type="submit">Proses</button>
-              <span id="loading" class="text-muted small d-none ms-3">Memproses…</span>
-            </div>
-
-          </form>
-        </div>
-      </div>
+          </div>
+          </div>
+          <div class="mt-3 d-flex align-items-center">
+            <button id="btnProcess" class="btn btn-primary" type="submit">Proses</button>
+            <span id="loading" class="text-muted small d-none ms-3">Memproses…</span>
+          </div>
+        </form>
     </div>
   </div>
 </div>

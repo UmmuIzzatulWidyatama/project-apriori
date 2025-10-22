@@ -60,7 +60,6 @@
           <div class="kpi-value"><span id="v_analisis">–</span> Data</div>
         </div>
 
-        <!-- Pie + copy + CTA (full width) -->
         <div class="card-kpi card-full">
           <div class="kpi-title mb-2">Top 3 Produk Paling Sering Muncul</div>
 
