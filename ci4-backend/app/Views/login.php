@@ -163,41 +163,44 @@
 
 <script>
 document.getElementById('loginForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
+  e.preventDefault();
 
-    const username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value.trim();
-    const alertDiv = document.getElementById('alert');
-    alertDiv.style.display = 'none';
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value.trim();
+  const alertDiv = document.getElementById('alert');
+  alertDiv.style.display = 'none';
 
-    try {
-        const response = await fetch('<?= site_url('api/login') ?>', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
-        });
+  try {
+    const response = await fetch('<?= site_url('api/login') ?>', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({ username, password })
+    });
 
-        const data = await response.json();
+    const data = await response.json().catch(() => ({}));
 
-        if (response.ok) {
-            alertDiv.className = 'success-msg';
-            alertDiv.textContent = 'Login berhasil! Selamat datang, ' + data.user.username;
-            alertDiv.style.display = 'block';
+    if (response.ok) {
+      alertDiv.className = 'success-msg';
+      alertDiv.textContent = 'Login berhasil ! Selamat datang, ' + (data?.user?.username ?? '');
+      alertDiv.style.display = 'block';
 
-            // TODO: Redirect ke halaman dashboard setelah 1.5 detik
-            setTimeout(() => {
-                window.location.href = '<?= site_url('halaman-utama') ?>';
-            }, 1500);
-        } else {
-            alertDiv.className = 'error-msg';
-            alertDiv.textContent = data?.messages?.error || 'Login gagal';
-            alertDiv.style.display = 'block';
-        }
-    } catch (error) {
-        alertDiv.className = 'error-msg';
-        alertDiv.textContent = 'Terjadi kesalahan koneksi.';
-        alertDiv.style.display = 'block';
+      setTimeout(() => {
+        window.location.href = '<?= site_url('halaman-utama') ?>';
+      }, 1500);
+    } else {
+      alertDiv.className = 'error-msg';
+      alertDiv.textContent = data?.messages?.error || data?.message || 'Login gagal';
+      alertDiv.style.display = 'block';
     }
+  } catch (error) {
+    console.error(error);
+    alertDiv.className = 'error-msg';
+    alertDiv.textContent = 'Terjadi kesalahan koneksi.';
+    alertDiv.style.display = 'block';
+  }
 });
 </script>
 

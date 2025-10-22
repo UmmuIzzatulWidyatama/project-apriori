@@ -1,6 +1,15 @@
 <?= $this->include('layout/sidebar'); ?>
 
 <?= $this->section('content') ?>
+<style>
+  .truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    max-width: 360px;      /* ubah sesuai layout */
+  }
+</style>
 
 <div class="container-fluid mt-4 px-3">
   <div class="row">
@@ -54,19 +63,29 @@
     }
   }
 
+  function escapeHtml(str) {
+    return String(str ?? '')
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
   function renderTable() {
     const tbody = document.querySelector("#transaksiTable tbody");
     tbody.innerHTML = "";
     transactions.forEach(trx => {
+      const produkFull = escapeHtml(trx.items ?? "-");
       const row = document.createElement('tr');
       row.innerHTML = `
         <td>${trx.id}</td>
         <td>${trx.sale_date}</td>
         <td>${trx.transaction_number || '-'}</td>
-        <td>${trx.items}</td>
+        <td>
+          <span class="truncate-2" title="${produkFull}">${produkFull}</span>
+        </td>
         <td>
           <a href="<?= base_url('transaksi/detail') ?>?id=${trx.id}" class="btn btn-sm btn-primary">Detail</a>
-          <button type="button" class="btn btn-sm btn-danger ms-1" onclick="deleteTrx(${trx.id})">Hapus</button>
+          <button type="button" class="btn btn-sm btn-danger ms-1" onclick="deleteTrx('${trx.id}')">Hapus</button>
         </td>`;
       tbody.appendChild(row);
     });
