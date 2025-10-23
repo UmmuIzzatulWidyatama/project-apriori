@@ -2,7 +2,8 @@
 <?= $this->section('content') ?>
 
 <?php
-  $s     = (int)($step ?? 6); // step aktif: Lift Ratio
+  // step aktif: Lift Ratio
+  $s     = (int)($step ?? 4);
   $steps = [1=>'Main Info',2=>'Frequent Itemset',3=>'Association Rule',4=>'Lift Ratio',5=>'Kesimpulan'];
 ?>
 
@@ -44,6 +45,9 @@
         </div>
 
         <div class="card-body">
+          <!-- Insight dari endpoint kesimpulan -->
+          <div id="liftInsight" class="alert alert-warning d-none" role="alert"></div>
+
           <div id="stateLift" class="small text-muted mb-2">Memuat Lift Ratio…</div>
 
           <div class="table-responsive">
@@ -59,10 +63,11 @@
           </div>
         </div>
       </div>
+
       <div class="d-flex justify-content-between mt-3">
         <a class="btn btn-secondary" href="<?= esc($backUrl ?? site_url('report')) ?>">Sebelumnya</a>
         <a class="btn btn-primary<?= empty($reportId) ? ' disabled' : '' ?>" href="<?= site_url('report/kesimpulan/'.$reportId) ?>">Selanjutnya</a>
-      </div> 
+      </div>
     </div>
   </div>
 </div>
@@ -72,8 +77,9 @@
   const id      = "<?= (int)($reportId ?? 0) ?>";
 
   const els = {
-    state: document.getElementById('stateLift'),
-    tbody: document.querySelector('#tblLift tbody'),
+    state  : document.getElementById('stateLift'),
+    tbody  : document.querySelector('#tblLift tbody'),
+    insight: document.getElementById('liftInsight'),
   };
 
   // format angka tanpa trailing zero (maks 4 desimal)
@@ -100,17 +106,29 @@
   (async () => {
     if (!id) return;
     try {
-      // urutkan by lift desc biar sesuai mockup
-      const res = await fetch(`${apiBase}/lift/${id}?order=lift&dir=DESC`, { headers:{'Accept':'application/json'} });
-      if (!res.ok) throw new Error('HTTP '+res.status);
-      const js = await res.json();
+      // Ambil daftar lift & insight lift sekaligus
+      const [resLift, resSum] = await Promise.all([
+        fetch(`${apiBase}/lift/${id}?order=lift&dir=DESC`, { headers:{'Accept':'application/json'} }),
+        fetch(`${apiBase}/kesimpulan/${id}`,              { headers:{'Accept':'application/json'} }),
+      ]);
+      if (!resLift.ok) throw new Error('HTTP '+resLift.status+' (lift)');
+      if (!resSum.ok)  throw new Error('HTTP '+resSum.status+' (kesimpulan)');
 
-      const rows = Array.isArray(js.data) ? js.data : [];
+      // TABEL LIFT
+      const jsLift = await resLift.json();
+      const rows   = Array.isArray(jsLift.data) ? jsLift.data : [];
       els.tbody.innerHTML = rows.length
         ? rows.map(makeRow).join('')
         : '<tr><td colspan="2" class="text-center text-muted">Tidak ada data.</td></tr>';
-
       els.state.classList.add('d-none');
+
+      // INSIGHT LIFT
+      const jsSum = await resSum.json();
+      const insightText = jsSum?.insight_lift_ratio || '';
+      if (insightText) {
+        els.insight.textContent = insightText; // aman (plain text)
+        els.insight.classList.remove('d-none');
+      }
     } catch (e) {
       els.state.textContent = 'Gagal memuat Lift Ratio. ' + e.message;
       console.error(e);

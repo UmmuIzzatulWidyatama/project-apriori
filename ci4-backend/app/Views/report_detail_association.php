@@ -61,8 +61,9 @@
 </div>
 
 <script>
-  const apiUrl = "<?= rtrim(site_url('api/report/association'), '/') ?>/<?= (int)($reportId ?? 0) ?>";
-  const wrap   = document.getElementById('wrapSections');
+  const apiAssoc  = "<?= rtrim(site_url('api/report/association'), '/') ?>/<?= (int)($reportId ?? 0) ?>";
+  const apiSum    = "<?= rtrim(site_url('api/report/kesimpulan'), '/') ?>/<?= (int)($reportId ?? 0) ?>";
+  const wrap      = document.getElementById('wrapSections');
 
   // helpers
   const n4 = x => (x==null || Number.isNaN(+x)) ? '–'
@@ -71,13 +72,16 @@
   const fmtSet = (arr) => `{${(arr||[]).join(', ')}}`;
   const ruleText = (a,c) => `${fmtSet(a)} -> ${fmtSet(c)}`;
 
-  // render satu section (k = ukuran itemset)
-  function renderSection(k, rows){
+  // render satu section (k = ukuran itemset) + optional insightText
+  function renderSection(k, rows, insightText){
     const card = document.createElement('div');
     card.className = 'section-card';
     card.innerHTML = `
       <div class="section-head">Association Rules ${k}-Itemset</div>
       <div class="p-3 pt-2">
+        <div class="alert alert-warning mb-3 d-none" role="alert">
+          <span class="insight-text"></span>
+        </div>
         <div class="table-responsive">
           <table class="table table-bordered table-sm table-zebra">
             <thead>
@@ -106,23 +110,49 @@
         </div>
       </div>
     `;
+
+    if (insightText) {
+      const alertBox = card.querySelector('.alert');
+      const span = card.querySelector('.insight-text');
+      span.textContent = insightText;        // aman dari HTML injection
+      alertBox.classList.remove('d-none');
+    }
+
     return card;
   }
 
   (async () => {
     try{
-      const res = await fetch(apiUrl, { headers:{'Accept':'application/json'} });
-      if (!res.ok) throw new Error('HTTP '+res.status);
-      const j = await res.json();
+      // Ambil data association (tabel) dan kesimpulan (insight) bersamaan
+      const [rAssoc, rSum] = await Promise.all([
+        fetch(apiAssoc, { headers:{'Accept':'application/json'} }),
+        fetch(apiSum,   { headers:{'Accept':'application/json'} }),
+      ]);
+      if (!rAssoc.ok) throw new Error('HTTP '+rAssoc.status+' (association)');
+      if (!rSum.ok)   throw new Error('HTTP '+rSum.status+' (kesimpulan)');
+
+      const assoc = await rAssoc.json();
+      const sum   = await rSum.json();
 
       // tampilkan meta Minimum Confidence
-      if (j.min_confidence != null){
-        document.getElementById('v_min_conf').textContent = n4(j.min_confidence);
+      if (assoc.min_confidence != null){
+        document.getElementById('v_min_conf').textContent = n4(assoc.min_confidence);
         document.getElementById('metaBox').hidden = false;
       }
 
+      // map insight per k dari insights_association_all (ambil elemen pertama saja, sesuai API kamu)
+      const insightMap = {};
+      if (sum && sum.insights_association_all && typeof sum.insights_association_all === 'object') {
+        Object.keys(sum.insights_association_all).forEach(k => {
+          const arr = sum.insights_association_all[k];
+          if (Array.isArray(arr) && arr.length) {
+            insightMap[Number(k)] = arr[0]?.text || '';
+          }
+        });
+      }
+
       // groups: { "2":[...], "3":[...], ... }
-      const groups = (j.data && typeof j.data === 'object') ? j.data : {};
+      const groups = (assoc.data && typeof assoc.data === 'object') ? assoc.data : {};
       const ks = Object.keys(groups).map(Number).sort((a,b)=>a-b);
 
       wrap.innerHTML = '';
@@ -130,7 +160,12 @@
         wrap.innerHTML = `<div class="alert alert-warning">Tidak ada association rules untuk analisis ini.</div>`;
         return;
       }
-      ks.forEach(k => wrap.appendChild(renderSection(k, groups[String(k)])));
+
+      ks.forEach(k => {
+        const insightText = insightMap[k] || ''; // mungkin kosong
+        wrap.appendChild(renderSection(k, groups[String(k)], insightText));
+      });
+
     } catch(e){
       console.error(e);
       wrap.innerHTML = `<div class="alert alert-danger">Gagal memuat Association Rules: ${e.message}</div>`;

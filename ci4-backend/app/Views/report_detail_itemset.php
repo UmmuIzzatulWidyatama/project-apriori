@@ -21,6 +21,9 @@
   .table-sm th,.table-sm td{ padding:.55rem .7rem;}
   .table-zebra tbody tr:nth-child(odd){ background:#f8f9fa; }
   .table-zebra thead th{ background:#e9ecef; border-bottom:1px solid #ced4da; }
+
+  /* alert insight */
+  .insight-note{ background:#fff7e6; border:1px solid #ffe5b4; color:#7a5a00; border-radius:.5rem; padding:.75rem 1rem; margin: .25rem 0 1rem; }
 </style>
 
 <div class="container-fluid mt-4 px-3">
@@ -61,21 +64,23 @@
 </div>
 
 <script>
-const apiUrl = "<?= rtrim(site_url('api/report/itemset'), '/') ?>/<?= (int)($reportId ?? 0) ?>";
-const wrap   = document.getElementById('wrapSections');
+const apiItemset   = "<?= rtrim(site_url('api/report/itemset'), '/') ?>/<?= (int)($reportId ?? 0) ?>";
+const apiSummary   = "<?= rtrim(site_url('api/report/kesimpulan'), '/') ?>/<?= (int)($reportId ?? 0) ?>";
+const wrap         = document.getElementById('wrapSections');
 
 // helpers
 const n0 = x => (x==null||x==='') ? '–' : new Intl.NumberFormat('id-ID',{maximumFractionDigits:0}).format(Number(x));
 const n4 = x => (x==null||x==='') ? '–' : new Intl.NumberFormat('en-US',{maximumFractionDigits:4, minimumFractionDigits:0, useGrouping:false}).format(Number(x));
 const toText = v => Array.isArray(v) ? v.join(', ') : String(v ?? '');
 
-// buat satu section untuk k-itemset
-function renderSection(k, rows){
+// buat satu section untuk k-itemset (dengan optional insight)
+function renderSection(k, rows, insightText){
   const card = document.createElement('div');
   card.className = 'section-card';
   card.innerHTML = `
     <div class="section-head">Frequent ${k}-Itemset</div>
-    <div class="p-3 pt-2">  <!-- padding atas/kanan/kiri -->
+    <div class="p-3 pt-2">
+      ${insightText ? `<div class="insight-note">${insightText}</div>` : ``}
       <div class="table-responsive">
         <table class="table table-bordered table-sm table-zebra">
           <thead>
@@ -107,31 +112,46 @@ function renderSection(k, rows){
 
 (async () => {
   try{
-    const res = await fetch(apiUrl, { headers:{'Accept':'application/json'} });
-    if (!res.ok) throw new Error('HTTP '+res.status);
-    const j = await res.json();
+    // Ambil itemset (tabel) dan kesimpulan (insight) bersamaan
+    const [resItemset, resSumm] = await Promise.all([
+      fetch(apiItemset, { headers:{'Accept':'application/json'} }),
+      fetch(apiSummary, { headers:{'Accept':'application/json'} })
+    ]);
+    if (!resItemset.ok) throw new Error('HTTP '+resItemset.status+' (itemset)');
+    if (!resSumm.ok)    throw new Error('HTTP '+resSumm.status+' (kesimpulan)');
+
+    const jItem = await resItemset.json();
+    const jSumm = await resSumm.json();
 
     // set meta sekali di paling atas
-    document.getElementById('v_total').textContent      = n0(j.transaction_total);
-    document.getElementById('v_min_support').textContent= n4(j.min_support);
+    document.getElementById('v_total').textContent      = n0(jItem.transaction_total);
+    document.getElementById('v_min_support').textContent= n4(jItem.min_support);
     document.getElementById('metaBox').hidden = false;
 
-    const meta   = { transaction_total: j.transaction_total, min_support: j.min_support };
-    const groups = j.data || {};                          // { "1":[...], "2":[...], ... }
-    const ks     = Object.keys(groups).map(Number).sort((a,b)=>a-b);
+    const groups   = jItem.data || {};  // tabel per k
+    const insights = jSumm?.insights_frequent_all || {}; // insight per k
+    const ks       = Object.keys(groups).map(Number).sort((a,b)=>a-b);
 
     wrap.innerHTML = '';
     if (ks.length === 0) {
       wrap.innerHTML = `<div class="alert alert-warning">Tidak ada frequent itemset untuk analisis ini.</div>`;
       return;
     }
-    ks.forEach(k => wrap.appendChild(renderSection(k, groups[String(k)])));
+
+    ks.forEach(k => {
+      const rows    = groups[String(k)] || [];
+      // ambil teks insight pertama utk k ini, kalau ada
+      const insightText = Array.isArray(insights[String(k)]) && insights[String(k)][0]?.text
+                          ? insights[String(k)][0].text
+                          : '';
+      wrap.appendChild(renderSection(k, rows, insightText));
+    });
+
   } catch(e){
     console.error(e);
     wrap.innerHTML = `<div class="alert alert-danger">Gagal memuat Frequent Itemset: ${e.message}</div>`;
   }
 })();
 </script>
-
 
 <?= $this->endSection() ?>
