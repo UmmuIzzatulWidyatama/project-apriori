@@ -40,7 +40,7 @@
         <div>
           <h5 class="fw-semibold mb-2">Aplikasi Apriori Toko Djati Intan Barokah</h5>
           <p class="mb-3 text-muted">
-            Analisis transaksi untuk menemukan pasangan produk yang sering dibeli bersama,
+            Analisis transaksi untuk menemukan pasangan produk yang sering dibeli bersama
             agar promosi, bundling, dan penempatan produk lebih tepat sasaran.
           </p>
           <a href="http://localhost:8080/apriori" class="btn btn-primary btn-sm">

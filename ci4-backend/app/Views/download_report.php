@@ -1,18 +1,29 @@
 <?php
-// Helper kecil untuk ambil teks frequent / association berdasarkan k tertentu
-$freq = $insights_frequent_all ?? [];
-$assoc= $insights_association_all ?? [];
+// Helper kecil untuk ambil teks frequent / association
+$freq  = $insights_frequent_all ?? [];
+$assoc = $insights_association_all ?? [];
 
-$getFreqText = function(int $k) use ($freq) {
-  $arr = $freq[(string)$k] ?? [];
-  return isset($arr[0]['text']) ? $arr[0]['text'] : '';
-};
-$getAssocText = function(int $k) use ($assoc) {
-  $arr = $assoc[(string)$k] ?? [];
-  return isset($arr[0]['text']) ? $arr[0]['text'] : '';
-};
+// Sanitize printer
+function escp($s){ return htmlspecialchars((string)($s ?? ''), ENT_QUOTES, 'UTF-8'); }
 
-function escp($s){ return htmlspecialchars((string)$s ?? '', ENT_QUOTES, 'UTF-8'); }
+// Ambil & urutkan k (hanya yang numerik) untuk frequent
+$freqKs = [];
+if (is_array($freq)) {
+  foreach ($freq as $k => $arr) {
+    if (is_numeric($k)) $freqKs[] = (int)$k;
+  }
+  sort($freqKs, SORT_NUMERIC);
+}
+
+// Ambil & urutkan k (hanya yang numerik) untuk association
+$assocKs = [];
+if (is_array($assoc)) {
+  foreach ($assoc as $k => $arr) {
+    if (is_numeric($k)) $assocKs[] = (int)$k;
+  }
+  sort($assocKs, SORT_NUMERIC);
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -57,21 +68,36 @@ function escp($s){ return htmlspecialchars((string)$s ?? '', ENT_QUOTES, 'UTF-8'
     <tr><td class="k">Jumlah Transaksi</td><td>:</td><td><?= escp($transaction_total ?? '-') ?></td></tr>
   </table>
 
+  <!-- Frequent (dinamis 1..n) -->
   <div class="section">
     <h4>Insight Frequent Itemset</h4>
-    <div class="line">Frequent 1-Itemset : <?= escp($getFreqText(1)) ?></div>
-    <div class="line">Frequent 2-Itemset : <?= escp($getFreqText(2)) ?></div>
-    <div class="line">Frequent 3-Itemset : <?= escp($getFreqText(3)) ?></div>
-    <div class="line">Frequent 4-Itemset : <?= escp($getFreqText(4)) ?></div>
-    <div class="line">Frequent 5-Itemset : <?= escp($getFreqText(5)) ?></div>
+    <?php if (!empty($freqKs)): ?>
+      <?php foreach ($freqKs as $k): ?>
+        <?php
+          $arr  = $freq[(string)$k] ?? [];
+          $text = isset($arr[0]['text']) ? (string)$arr[0]['text'] : '-';
+        ?>
+        <div class="line">Frequent <?= (int)$k ?>-Itemset : <?= escp($text) ?></div>
+      <?php endforeach; ?>
+    <?php else: ?>
+      <div class="line muted">Tidak ada insight frequent itemset.</div>
+    <?php endif; ?>
   </div>
 
+  <!-- Association (juga dinamis biar seragam) -->
   <div class="section">
     <span class="strong">Insight Association Rule</span>
-    <div class="line">Association Rule 2-Itemset : <?= escp($getAssocText(2)) ?></div>
-    <div class="line">Association Rule 3-Itemset : <?= escp($getAssocText(3)) ?></div>
-    <div class="line">Association Rule 4-Itemset : <?= escp($getAssocText(4)) ?></div>
-    <div class="line">Association Rule 5-Itemset : <?= escp($getAssocText(5)) ?></div>
+    <?php if (!empty($assocKs)): ?>
+      <?php foreach ($assocKs as $k): ?>
+        <?php
+          $arr  = $assoc[(string)$k] ?? [];
+          $text = isset($arr[0]['text']) ? (string)$arr[0]['text'] : '-';
+        ?>
+        <div class="line">Association Rule <?= (int)$k ?>-Itemset : <?= escp($text) ?></div>
+      <?php endforeach; ?>
+    <?php else: ?>
+      <div class="line muted">Tidak ada insight association rule.</div>
+    <?php endif; ?>
   </div>
 
   <div class="section">

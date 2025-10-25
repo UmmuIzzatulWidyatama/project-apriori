@@ -22,7 +22,6 @@ def run_apriori():
         all_items = sorted({item for sublist in df['items'] for item in sublist})
         encoded = pd.DataFrame([{item: (item in row) for item in all_items} for row in df['items']])
 
-        # Batasi sampai 3-itemset
         freq = apriori(
             encoded,
             min_support=min_support,

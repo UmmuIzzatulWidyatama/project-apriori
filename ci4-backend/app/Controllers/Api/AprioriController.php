@@ -34,9 +34,15 @@ class AprioriController extends BaseController
 
         $transactions = [];
         foreach ($data as $row) {
-            $transactions[] = [
-                'items' => explode(',', $row->items)
-            ];
+            $arr = json_decode($row->items_json ?? '[]', true);
+            if (!is_array($arr)) $arr = [];
+            // trim, buang kosong, unik
+            $arr = array_map('trim', $arr);
+            $arr = array_values(array_filter($arr, fn($x) => $x !== ''));
+            $arr = array_values(array_unique($arr));
+            if (!empty($arr)) {
+                $transactions[] = ['items' => $arr];
+            }
         }
 
         // 2. Kirim ke Python API
