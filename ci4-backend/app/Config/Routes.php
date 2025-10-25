@@ -3,6 +3,7 @@
 use CodeIgniter\Router\RouteCollection;
 
 // Public (no auth)
+$routes->get('/', 'AuthController::loginView', ['namespace' => 'App\Controllers\Api']);
 $routes->get('login', 'AuthController::loginView', ['namespace' => 'App\Controllers\Api']);
 $routes->post('api/login', 'AuthController::login', ['namespace' => 'App\Controllers\Api']);
 
