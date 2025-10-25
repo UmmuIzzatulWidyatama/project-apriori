@@ -61,7 +61,7 @@
         </div>
 
         <div class="card-kpi card-full">
-          <div class="kpi-title mb-2">Top 3 Produk Paling Sering Muncul</div>
+          <div class="kpi-title mb-2">Top 3 Produk Paling Sering Muncul Dalam Transaksi</div>
 
           <div class="card-split">
             <div class="pie-wrap">

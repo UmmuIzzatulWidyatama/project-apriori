@@ -34,6 +34,7 @@ class HomeController extends BaseController
             ],
         ]);
     }
+
     public function topProducts()
     {
         $limit = (int) ($this->request->getGet('limit') ?? 3);
@@ -41,22 +42,26 @@ class HomeController extends BaseController
 
         $mItem = new AprioriItemsetModel();
 
-        // Ambil semua itemset + frequency, lalu tally di PHP
-        $rows = $mItem->select('itemsets, frequency')->findAll();
+        // Ambil hanya kolom yang dibutuhkan + filter freq > 0
+        $rows = $mItem->select('itemsets, frequency')
+                    ->where('frequency >', 0)
+                    ->findAll();
 
         $counts = [];
         foreach ($rows as $r) {
             $items = json_decode($r['itemsets'] ?? '[]', true) ?: [];
-            $freq  = (int)($r['frequency'] ?? 0);
-            if ($freq <= 0) $freq = 1;          // fallback aman
 
-            foreach ($items as $it) {
-                $name = (string)$it;
-                $counts[$name] = ($counts[$name] ?? 0) + $freq;
+            if (!is_array($items) || count($items) !== 1) {
+                continue;
             }
+
+            $freq = (int)($r['frequency'] ?? 0);
+
+            $name = (string)$items[0]; 
+            $counts[$name] = ($counts[$name] ?? 0) + $freq;
         }
 
-        // Urutkan descending & ambil top-N
+        // Urutkan dan ambil top-N
         arsort($counts);
         $top = array_slice($counts, 0, $limit, true);
 
@@ -71,4 +76,5 @@ class HomeController extends BaseController
             'data'   => $data,
         ]);
     }
+
 }
